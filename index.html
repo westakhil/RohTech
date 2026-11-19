@@ -25,7 +25,7 @@
       height: 100vh;
     }
 
-    /* 2D Overlay HUD & Desktop Controls (Clean Glassmorphism) */
+    /* 2D Overlay HUD & Desktop Controls */
     #desktop-hud {
       position: absolute;
       top: 0;
@@ -46,7 +46,7 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
-      background: rgba(13, 17, 23, 0.88);
+      background: rgba(13, 17, 23, 0.9);
       backdrop-filter: blur(12px);
       border: 1px solid rgba(255, 255, 255, 0.12);
       border-radius: 12px;
@@ -138,7 +138,7 @@
       50% { opacity: 0.4; transform: scale(0.85); }
     }
 
-    /* Scenario Bar (Bottom Center) */
+    /* Scenario Bar */
     .hud-scenarios {
       display: flex;
       justify-content: center;
@@ -180,7 +180,7 @@
       color: #38bdf8;
     }
 
-    /* Viewpoint Switcher & Controls Guide */
+    /* Viewpoint Sidebar */
     .hud-sidebar {
       position: absolute;
       right: 14px;
@@ -366,12 +366,35 @@
   </style>
 
   <!-- ============================================================
-       CUSTOM A-FRAME COMPONENTS:
-       - quest-locomotion: Buttery-smooth WebXR direct gamepad polling with velocity lerping & snap-turning
-       - vr-clickable: Non-destructive, debounced, persistent 3D button interactions
+       CANVAS ROUNDRECT POLYFILL (Guarantees zero canvas crashes!)
        ============================================================ -->
   <script>
-    // 1. High-Performance, Smooth Locomotion & Snap Turn Component for Quest 3S
+    if (!CanvasRenderingContext2D.prototype.roundRect) {
+      CanvasRenderingContext2D.prototype.roundRect = function (x, y, w, h, radii) {
+        if (!radii) radii = 0;
+        const r = typeof radii === 'number' ? radii : (radii[0] || 0);
+        this.beginPath();
+        this.moveTo(x + r, y);
+        this.lineTo(x + w - r, y);
+        this.quadraticCurveTo(x + w, y, x + w, y + r);
+        this.lineTo(x + w, y + h - r);
+        this.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+        this.lineTo(x + r, y + h);
+        this.quadraticCurveTo(x, y + h, x, y + h - r);
+        this.lineTo(x, y + r);
+        this.quadraticCurveTo(x, y, x + r, y);
+        this.closePath();
+        return this;
+      };
+    }
+  </script>
+
+  <!-- ============================================================
+       CUSTOM A-FRAME COMPONENTS:
+       - quest-locomotion: Direct gamepad polling with velocity lerp & snap-turning
+       - vr-clickable: Non-destructive, debounced 3D button interactions
+       ============================================================ -->
+  <script>
     AFRAME.registerComponent('quest-locomotion', {
       schema: {
         speed: { type: 'number', default: 1.8 },
@@ -385,7 +408,6 @@
         this.leftStick = [0, 0];
         this.rightStick = [0, 0];
 
-        // Event-based fallback
         const leftEl = document.getElementById('left-controller');
         if (leftEl) {
           leftEl.addEventListener('axismove', (e) => {
@@ -408,13 +430,12 @@
       },
       tick: function (time, delta) {
         if (!delta) return;
-        const dt = Math.min(delta / 1000, 0.05); // Cap delta to prevent leaps
+        const dt = Math.min(delta / 1000, 0.05);
 
         let moveX = 0;
         let moveY = 0;
         let turnX = 0;
 
-        // Poll Gamepads directly (smooth 90Hz/120Hz tracking on Quest)
         const gamepads = navigator.getGamepads ? navigator.getGamepads() : [];
         for (let i = 0; i < gamepads.length; i++) {
           const gp = gamepads[i];
@@ -431,12 +452,10 @@
           }
         }
 
-        // Fallback to event-based axes if direct poll returned 0
         if (moveX === 0 && Math.abs(this.leftStick[0]) > 0.12) moveX = this.leftStick[0];
         if (moveY === 0 && Math.abs(this.leftStick[1]) > 0.12) moveY = this.leftStick[1];
         if (turnX === 0 && Math.abs(this.rightStick[0]) > 0.5) turnX = this.rightStick[0];
 
-        // Smooth Snap Turn with cooldown
         if (Math.abs(turnX) > 0.5) {
           if (this.canSnapTurn) {
             this.canSnapTurn = false;
@@ -447,7 +466,6 @@
           }
         }
 
-        // Velocity Lerp for organic, buttery smooth locomotion
         if (Math.abs(moveX) > 0.01 || Math.abs(moveY) > 0.01) {
           const camRot = this.camera ? this.camera.getAttribute('rotation') : { y: 0 };
           const rigRot = this.rig.getAttribute('rotation') || { y: 0 };
@@ -459,11 +477,9 @@
           const targetVx = (Math.sin(angle) * forward + Math.cos(angle) * strafe) * this.data.speed;
           const targetVz = (-Math.cos(angle) * forward + Math.sin(angle) * strafe) * this.data.speed;
 
-          // Smooth acceleration
           this.velocity.x += (targetVx - this.velocity.x) * 12 * dt;
           this.velocity.z += (targetVz - this.velocity.z) * 12 * dt;
         } else {
-          // Smooth deceleration
           this.velocity.x += (0 - this.velocity.x) * 14 * dt;
           this.velocity.z += (0 - this.velocity.z) * 14 * dt;
         }
@@ -477,7 +493,6 @@
       }
     });
 
-    // 2. Persistent, Debounced VR Clickable Component (Prevents buttons from sinking/disappearing!)
     AFRAME.registerComponent('vr-clickable', {
       schema: {
         action: { type: 'string', default: '' },
@@ -488,17 +503,14 @@
         const action = this.data.action;
         this.isProcessing = false;
 
-        // Cache the exact initial local position once so it can NEVER drift or sink into walls!
         const basePos = el.getAttribute('position') || { x: 0, y: 0, z: 0 };
         this.initialPos = { x: basePos.x, y: basePos.y, z: basePos.z };
 
         const executeAction = (e) => {
           if (e && e.stopPropagation) e.stopPropagation();
-          // Debounce: reject secondary events (mousedown, click, triggerdown) within 250ms
           if (this.isProcessing) return;
           this.isProcessing = true;
 
-          // Visual tactile feedback: bright flash and 3mm press
           el.setAttribute('material', 'emissive', '#ffffff');
           el.setAttribute('material', 'emissiveIntensity', '0.75');
           el.setAttribute('position', {
@@ -507,7 +519,6 @@
             z: this.initialPos.z - 0.004
           });
 
-          // Restore exact original position after 160ms
           setTimeout(() => {
             el.setAttribute('position', this.initialPos);
             el.setAttribute('material', 'emissive', '#000000');
@@ -520,17 +531,17 @@
               window.windowwise.selectScenario(action.replace('scenario:', ''));
             } else if (action.startsWith('teleport:')) {
               window.windowwise.teleportTo(action.replace('teleport:', ''));
+            } else if (action === 'autodemo') {
+              window.windowwise.toggleAutoDemo();
             } else {
               window.windowwise.handleDriverAction(action);
             }
           }
         };
 
-        // Attach to click and triggerdown
         el.addEventListener('click', executeAction);
         el.addEventListener('triggerdown', executeAction);
 
-        // Hover highlight
         el.addEventListener('mouseenter', () => {
           if (!this.isProcessing) {
             el.setAttribute('material', 'emissive', this.data.hoverColor);
@@ -575,20 +586,23 @@
 
     <!-- Scenarios Navigation -->
     <div class="hud-scenarios">
-      <button class="scenario-btn active" onclick="windowwise.selectScenario('normal')">
+      <button class="scenario-btn active" id="btn-scen-normal" onclick="windowwise.selectScenario('normal')">
         <span class="badge">NORMAL</span> Cruising
       </button>
-      <button class="scenario-btn" onclick="windowwise.selectScenario('scenarioA')">
+      <button class="scenario-btn" id="btn-scen-scenarioA" onclick="windowwise.selectScenario('scenarioA')">
         <span class="badge">A</span> Head/Body Leaning
       </button>
-      <button class="scenario-btn" onclick="windowwise.selectScenario('scenarioB')">
+      <button class="scenario-btn" id="btn-scen-scenarioB" onclick="windowwise.selectScenario('scenarioB')">
         <span class="badge">B</span> Hand Outside
       </button>
-      <button class="scenario-btn" onclick="windowwise.selectScenario('scenarioC')">
+      <button class="scenario-btn" id="btn-scen-scenarioC" onclick="windowwise.selectScenario('scenarioC')">
         <span class="badge">C</span> Window Limit Exceeded
       </button>
-      <button class="scenario-btn" onclick="windowwise.selectScenario('scenarioD')">
+      <button class="scenario-btn" id="btn-scen-scenarioD" onclick="windowwise.selectScenario('scenarioD')">
         <span class="badge">D</span> Object Thrown
+      </button>
+      <button class="scenario-btn" style="border-color:#10b981;" onclick="windowwise.toggleAutoDemo()">
+        ▶ Auto Demo Tour
       </button>
       <button class="scenario-btn" style="border-color:#ef4444;" onclick="windowwise.resetScenario()">
         🔄 Reset
@@ -623,7 +637,7 @@
     <strong>Meta Quest 3S:</strong><br/>
     • <b>Left Thumbstick:</b> Walk smoothly through bus<br/>
     • <b>Right Thumbstick:</b> Snap Turn (30°)<br/>
-    • <b>Trigger / Laser:</b> Click any button or floor teleport pad<br/>
+    • <b>Trigger / Laser:</b> Click dashboard buttons or floor teleport pads<br/>
     <strong>Desktop:</strong> Mouse Drag Look | <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> Move
   </div>
 
@@ -647,20 +661,20 @@
 
       <div class="features-list">
         <div class="feature-item">
-          <strong>Smooth Locomotion</strong>
-          Silky left-stick walking and right-stick snap-turning.
+          <strong>Direct VR Dashboard</strong>
+          Prominent alert banners and seat indicators right in front of the driver.
+        </div>
+        <div class="feature-item">
+          <strong>Auto Demo Tour</strong>
+          One-click automated walkthrough of all 4 safety scenarios and responses.
         </div>
         <div class="feature-item">
           <strong>Floor Teleport Pads</strong>
-          Point laser & click glowing floor pads to jump instantly.
+          Point laser & click glowing floor pads to jump to Seat 2A or back to driver.
         </div>
         <div class="feature-item">
           <strong>Tactile 3D Buttons</strong>
-          Permanent debounced buttons with bright tactile pulses.
-        </div>
-        <div class="feature-item">
-          <strong>In-VR Scenario Panel</strong>
-          Trigger all scenarios directly inside your VR headset.
+          Reliable debounced controls with audible sirens and PA announcements.
         </div>
       </div>
 
@@ -738,9 +752,18 @@
          ============================================================ -->
     <a-entity id="school-bus" position="0 0 0">
 
+      <!-- Overhead Emergency Flashing Lightbar (above windshield) -->
+      <a-box
+        id="emergency-lightbar"
+        position="0 2.2 -4.8"
+        width="1.6"
+        height="0.1"
+        depth="0.08"
+        material="color: #10b981; emissive: #10b981; emissiveIntensity: 0.4; shader: flat"
+      ></a-box>
+
       <!-- Floor / Aisle -->
       <a-box position="0 0.2 0" width="2.7" height="0.1" depth="11" material="color: #1e293b; roughness: 0.8"></a-box>
-      <!-- Center Aisle Non-Slip Mat with Yellow Safety Lines -->
       <a-plane position="0 0.255 0" rotation="-90 0 0" width="0.8" height="10.5" material="color: #0f172a; roughness: 0.9"></a-plane>
       <a-plane position="-0.4 0.256 0" rotation="-90 0 0" width="0.04" height="10.5" material="color: #facc15; roughness: 0.5"></a-plane>
       <a-plane position="0.4 0.256 0" rotation="-90 0 0" width="0.04" height="10.5" material="color: #facc15; roughness: 0.5"></a-plane>
@@ -756,7 +779,6 @@
 
       <!-- Front Wall & Windshield Pillar (at -Z) -->
       <a-box position="0 1.3 -5.45" width="2.7" height="2.2" depth="0.1" material="color: #eab308; roughness: 0.4"></a-box>
-      <!-- Front Windshield Glass -->
       <a-plane position="0 1.6 -5.4" rotation="0 0 0" width="2.4" height="1.1" material="color: #bae6fd; opacity: 0.25; transparent: true; roughness: 0.1"></a-plane>
       
       <!-- Rear Wall with Emergency Exit Door (at +Z) -->
@@ -798,37 +820,157 @@
 
       <!-- ============================================================
            WINDOWWISE DRIVER MONITORING DASHBOARD (3D INTERACTIVE)
-           Buttons are placed in front with permanent non-destructive coordinates
+           Contains Direct Native 3D SDF Text & Alert Banners!
            ============================================================ -->
-      <a-entity id="windowwise-terminal" position="-0.15 1.15 -4.1" rotation="10 25 0">
+      <a-entity id="windowwise-terminal" position="-0.15 1.15 -4.05" rotation="10 25 0">
         <!-- Terminal Housing -->
-        <a-box position="0 0 0" width="0.84" height="0.54" depth="0.04" material="color: #090d16; roughness: 0.4; metalness: 0.7"></a-box>
-        <a-cylinder position="0 -0.28 -0.05" rotation="-15 0 0" radius="0.025" height="0.35" material="color: #334155; metalness: 0.8"></a-cylinder>
+        <a-box position="0 0 0" width="0.88" height="0.66" depth="0.04" material="color: #090d16; roughness: 0.4; metalness: 0.7"></a-box>
+        <a-cylinder position="0 -0.36 -0.05" rotation="-15 0 0" radius="0.025" height="0.45" material="color: #334155; metalness: 0.8"></a-cylinder>
         
-        <!-- Live Dashboard Canvas Display Screen -->
-        <a-plane
-          id="dashboard-screen"
-          position="0 0 0.022"
-          width="0.80"
-          height="0.50"
-          material="shader: flat; src: #dashboard-canvas; transparent: false;"
-        ></a-plane>
+        <!-- Screen Background -->
+        <a-plane position="0 0.05 0.022" width="0.84" height="0.46" material="color: #0b1120; shader: flat"></a-plane>
 
-        <!-- Persistent 3D Driver Action Buttons (Positioned at Z = 0.045 to guarantee visibility) -->
-        <!-- Row 1: Voice Warning, Slow Down, Stop Bus -->
-        <a-entity position="0 -0.16 0.045">
+        <!-- TOP BAR: Logo & Speed -->
+        <a-text value="WINDOWWISE SAFETY TERMINAL" position="-0.4 0.25 0.025" width="0.8" color="#f59e0b" font="roboto"></a-text>
+        <a-text id="disp-speed" value="SPEED: 45 KM/H" position="0.18 0.25 0.025" width="0.8" color="#38bdf8" font="roboto"></a-text>
+
+        <!-- DYNAMIC PRIMARY ALERT BANNER (High Visibility In VR!) -->
+        <a-plane
+          id="disp-banner-bg"
+          position="0 0.16 0.025"
+          width="0.80"
+          height="0.11"
+          material="color: #059669; shader: flat"
+        >
+          <a-text
+            id="disp-banner-title"
+            value="✓ ALL SYSTEMS SECURE"
+            align="center"
+            position="0 0.02 0.01"
+            width="1.3"
+            color="#ffffff"
+            font="roboto"
+          ></a-text>
+          <a-text
+            id="disp-banner-sub"
+            value="All 8 Windows Within Safe Limits (<=10cm)"
+            align="center"
+            position="0 -0.03 0.01"
+            width="0.85"
+            color="#e2e8f0"
+            font="roboto"
+          ></a-text>
+        </a-plane>
+
+        <!-- TELEMETRY & INCIDENT DETAIL BOX -->
+        <a-plane position="0 0.04 0.025" width="0.80" height="0.10" material="color: #111827; shader: flat">
+          <a-text id="disp-location" value="MONITORED ZONE: CABIN SEATS 1A-4B" position="-0.38 0.025 0.01" width="0.8" color="#38bdf8"></a-text>
+          <a-text id="disp-detail" value="Perimeter IR tripwire grids active. Cruising normal." position="-0.38 -0.015 0.01" width="0.75" color="#cbd5e1"></a-text>
+        </a-plane>
+
+        <!-- 8 SEAT STATUS INDICATOR BADGES (Live Matrix Map) -->
+        <a-entity position="0 -0.04 0.025">
+          <!-- Row 1 -->
+          <a-box id="badge-seat-1A" position="-0.3 0 0" width="0.08" height="0.04" depth="0.01" material="color: #1e293b">
+            <a-text value="1A" align="center" position="0 0 0.008" width="0.7" color="#fff"></a-text>
+          </a-box>
+          <a-box id="badge-seat-1B" position="-0.2 0 0" width="0.08" height="0.04" depth="0.01" material="color: #1e293b">
+            <a-text value="1B" align="center" position="0 0 0.008" width="0.7" color="#fff"></a-text>
+          </a-box>
+
+          <!-- Row 2 (Leo) -->
+          <a-box id="badge-seat-2A" position="-0.08 0 0" width="0.08" height="0.04" depth="0.01" material="color: #1e293b">
+            <a-text value="2A" align="center" position="0 0 0.008" width="0.7" color="#fff"></a-text>
+          </a-box>
+          <a-box id="badge-seat-2B" position="0.02 0 0" width="0.08" height="0.04" depth="0.01" material="color: #1e293b">
+            <a-text value="2B" align="center" position="0 0 0.008" width="0.7" color="#fff"></a-text>
+          </a-box>
+
+          <!-- Row 3 (Maya) -->
+          <a-box id="badge-seat-3A" position="0.14 0 0" width="0.08" height="0.04" depth="0.01" material="color: #1e293b">
+            <a-text value="3A" align="center" position="0 0 0.008" width="0.7" color="#fff"></a-text>
+          </a-box>
+          <a-box id="badge-seat-3B" position="0.24 0 0" width="0.08" height="0.04" depth="0.01" material="color: #1e293b">
+            <a-text value="3B" align="center" position="0 0 0.008" width="0.7" color="#fff"></a-text>
+          </a-box>
+
+          <!-- Row 4 (Ethan) -->
+          <a-box id="badge-seat-4A" position="0.34 0 0" width="0.08" height="0.04" depth="0.01" material="color: #1e293b">
+            <a-text value="4A" align="center" position="0 0 0.008" width="0.7" color="#fff"></a-text>
+          </a-box>
+        </a-entity>
+
+        <!-- ============================================================
+             ON-DASHBOARD SCENARIO SELECTOR (Right in Driver's Direct View!)
+             ============================================================ -->
+        <a-entity position="0 -0.11 0.045">
+          <a-text value="SELECT SCENARIO TO TEST:" position="-0.4 0.035 0" width="0.65" color="#f59e0b"></a-text>
+
+          <a-box
+            class="clickable"
+            vr-clickable="action: scenario:scenarioA; hoverColor: #ef4444"
+            position="-0.32 0 0"
+            width="0.18"
+            height="0.04"
+            depth="0.02"
+            material="color: #dc2626"
+          >
+            <a-text value="A: Leaning" align="center" position="0 0 0.012" width="0.7" color="#fff"></a-text>
+          </a-box>
+
+          <a-box
+            class="clickable"
+            vr-clickable="action: scenario:scenarioB; hoverColor: #f59e0b"
+            position="-0.12 0 0"
+            width="0.18"
+            height="0.04"
+            depth="0.02"
+            material="color: #d97706"
+          >
+            <a-text value="B: Hand Out" align="center" position="0 0 0.012" width="0.7" color="#fff"></a-text>
+          </a-box>
+
+          <a-box
+            class="clickable"
+            vr-clickable="action: scenario:scenarioC; hoverColor: #eab308"
+            position="0.08 0 0"
+            width="0.18"
+            height="0.04"
+            depth="0.02"
+            material="color: #ca8a04"
+          >
+            <a-text value="C: Limit Ext" align="center" position="0 0 0.012" width="0.7" color="#fff"></a-text>
+          </a-box>
+
+          <a-box
+            class="clickable"
+            vr-clickable="action: scenario:scenarioD; hoverColor: #ec4899"
+            position="0.28 0 0"
+            width="0.18"
+            height="0.04"
+            depth="0.02"
+            material="color: #be185d"
+          >
+            <a-text value="D: Throw Obj" align="center" position="0 0 0.012" width="0.7" color="#fff"></a-text>
+          </a-box>
+        </a-entity>
+
+        <!-- ============================================================
+             DRIVER PREVENTATIVE ACTION BUTTONS
+             ============================================================ -->
+        <a-entity position="0 -0.19 0.045">
           <!-- Voice Warning Button -->
           <a-box
             id="btn-voice"
             class="clickable"
             vr-clickable="action: voice; hoverColor: #38bdf8"
-            position="-0.27 0 0"
+            position="-0.28 0 0"
             width="0.23"
-            height="0.07"
+            height="0.065"
             depth="0.025"
             material="color: #0284c7; roughness: 0.3"
           >
-            <a-text value="📢 VOICE WARN" align="center" position="0 0 0.015" width="0.95" color="#ffffff" font="roboto"></a-text>
+            <a-text value="📢 VOICE WARN" align="center" position="0 0 0.015" width="0.9" color="#ffffff"></a-text>
           </a-box>
 
           <!-- Slow Down Button -->
@@ -837,12 +979,12 @@
             class="clickable"
             vr-clickable="action: slow; hoverColor: #fbbf24"
             position="0 0 0"
-            width="0.21"
-            height="0.07"
+            width="0.22"
+            height="0.065"
             depth="0.025"
             material="color: #d97706; roughness: 0.3"
           >
-            <a-text value="⚠️ SLOW DOWN" align="center" position="0 0 0.015" width="0.95" color="#ffffff" font="roboto"></a-text>
+            <a-text value="⚠️ SLOW DOWN" align="center" position="0 0 0.015" width="0.9" color="#ffffff"></a-text>
           </a-box>
 
           <!-- Stop Bus Button -->
@@ -850,159 +992,57 @@
             id="btn-stop"
             class="clickable"
             vr-clickable="action: stop; hoverColor: #ef4444"
-            position="0.26 0 0"
+            position="0.27 0 0"
             width="0.22"
-            height="0.07"
+            height="0.065"
             depth="0.025"
             material="color: #dc2626; roughness: 0.3"
           >
-            <a-text value="🛑 STOP BUS" align="center" position="0 0 0.015" width="0.95" color="#ffffff" font="roboto"></a-text>
+            <a-text value="🛑 STOP BUS" align="center" position="0 0 0.015" width="0.9" color="#ffffff"></a-text>
           </a-box>
         </a-entity>
 
-        <!-- Row 2: Acknowledge & Notify Attendant -->
-        <a-entity position="0 -0.235 0.045">
-          <!-- Acknowledge Button -->
+        <!-- Row 2: Acknowledge & Quick Jump to Seat 2A -->
+        <a-entity position="0 -0.26 0.045">
           <a-box
             id="btn-ack"
             class="clickable"
             vr-clickable="action: ack; hoverColor: #34d399"
-            position="-0.15 0 0"
-            width="0.27"
-            height="0.06"
+            position="-0.24 0 0"
+            width="0.22"
+            height="0.055"
             depth="0.025"
             material="color: #10b981; roughness: 0.3"
           >
-            <a-text value="✓ ACKNOWLEDGE" align="center" position="0 0 0.015" width="0.9" color="#ffffff" font="roboto"></a-text>
+            <a-text value="✓ ACKNOWLEDGE" align="center" position="0 0 0.015" width="0.85" color="#ffffff"></a-text>
           </a-box>
 
-          <!-- Notify Attendant Button -->
+          <!-- Quick Jump To Hazard / Back to Driver -->
           <a-box
-            id="btn-notify"
             class="clickable"
-            vr-clickable="action: notify; hoverColor: #818cf8"
-            position="0.16 0 0"
-            width="0.27"
-            height="0.06"
+            vr-clickable="action: teleport:leo; hoverColor: #ef4444"
+            position="0.02 0 0"
+            width="0.24"
+            height="0.055"
             depth="0.025"
-            material="color: #6366f1; roughness: 0.3"
+            material="color: #7c3aed; roughness: 0.3"
           >
-            <a-text value="🔔 NOTIFY ATTENDANT" align="center" position="0 0 0.015" width="0.9" color="#ffffff" font="roboto"></a-text>
+            <a-text value="👁️ JUMP TO HAZARD" align="center" position="0 0 0.015" width="0.8" color="#ffffff"></a-text>
+          </a-box>
+
+          <!-- Auto Tour Button -->
+          <a-box
+            class="clickable"
+            vr-clickable="action: autodemo; hoverColor: #38bdf8"
+            position="0.27 0 0"
+            width="0.21"
+            height="0.055"
+            depth="0.025"
+            material="color: #475569; roughness: 0.3"
+          >
+            <a-text value="▶ AUTO TOUR" align="center" position="0 0 0.015" width="0.8" color="#38bdf8"></a-text>
           </a-box>
         </a-entity>
-      </a-entity>
-
-      <!-- ============================================================
-           IN-VR SCENARIO SELECTOR & TELEPORT PANEL
-           Mounted to the driver's left window pillar for instant access in VR
-           ============================================================ -->
-      <a-entity id="vr-scenario-panel" position="-1.2 1.25 -3.8" rotation="0 85 0">
-        <a-box position="0 0 0" width="0.75" height="0.55" depth="0.03" material="color: #0b1120; roughness: 0.4"></a-box>
-        <a-text value="⚡ VR SCENARIO SELECTOR" position="0 0.22 0.02" align="center" width="1.1" color="#f59e0b" font="roboto"></a-text>
-
-        <!-- Scenario A Button -->
-        <a-box
-          class="clickable"
-          vr-clickable="action: scenario:scenarioA; hoverColor: #ef4444"
-          position="-0.22 0.12 0.025"
-          width="0.28"
-          height="0.07"
-          depth="0.02"
-          material="color: #b91c1c"
-        >
-          <a-text value="A: LEANING OUT" align="center" position="0 0 0.014" width="0.8" color="#fff"></a-text>
-        </a-box>
-
-        <!-- Scenario B Button -->
-        <a-box
-          class="clickable"
-          vr-clickable="action: scenario:scenarioB; hoverColor: #f59e0b"
-          position="0.22 0.12 0.025"
-          width="0.28"
-          height="0.07"
-          depth="0.02"
-          material="color: #b45309"
-        >
-          <a-text value="B: HAND OUT" align="center" position="0 0 0.014" width="0.8" color="#fff"></a-text>
-        </a-box>
-
-        <!-- Scenario C Button -->
-        <a-box
-          class="clickable"
-          vr-clickable="action: scenario:scenarioC; hoverColor: #eab308"
-          position="-0.22 0.02 0.025"
-          width="0.28"
-          height="0.07"
-          depth="0.02"
-          material="color: #854d0e"
-        >
-          <a-text value="C: WINDOW LIMIT" align="center" position="0 0 0.014" width="0.8" color="#fff"></a-text>
-        </a-box>
-
-        <!-- Scenario D Button -->
-        <a-box
-          class="clickable"
-          vr-clickable="action: scenario:scenarioD; hoverColor: #ec4899"
-          position="0.22 0.02 0.025"
-          width="0.28"
-          height="0.07"
-          depth="0.02"
-          material="color: #9d174d"
-        >
-          <a-text value="D: THROW OBJECT" align="center" position="0 0 0.014" width="0.8" color="#fff"></a-text>
-        </a-box>
-
-        <!-- Reset Simulation Button -->
-        <a-box
-          class="clickable"
-          vr-clickable="action: scenario:normal; hoverColor: #10b981"
-          position="0 -0.09 0.025"
-          width="0.62"
-          height="0.07"
-          depth="0.02"
-          material="color: #047857"
-        >
-          <a-text value="🔄 RESET SIMULATION (NORMAL)" align="center" position="0 0 0.014" width="0.9" color="#fff"></a-text>
-        </a-box>
-
-        <!-- Quick In-VR Teleport Buttons -->
-        <a-text value="📍 QUICK JUMP:" position="-0.32 -0.19 0.02" width="0.75" color="#94a3b8"></a-text>
-        
-        <a-box
-          class="clickable"
-          vr-clickable="action: teleport:driver; hoverColor: #38bdf8"
-          position="-0.2 -0.23 0.025"
-          width="0.18"
-          height="0.045"
-          depth="0.02"
-          material="color: #1e293b"
-        >
-          <a-text value="Driver" align="center" position="0 0 0.014" width="0.8" color="#38bdf8"></a-text>
-        </a-box>
-
-        <a-box
-          class="clickable"
-          vr-clickable="action: teleport:leo; hoverColor: #ef4444"
-          position="0 -0.23 0.025"
-          width="0.18"
-          height="0.045"
-          depth="0.02"
-          material="color: #1e293b"
-        >
-          <a-text value="Seat 2A" align="center" position="0 0 0.014" width="0.8" color="#ef4444"></a-text>
-        </a-box>
-
-        <a-box
-          class="clickable"
-          vr-clickable="action: teleport:mid; hoverColor: #38bdf8"
-          position="0.2 -0.23 0.025"
-          width="0.18"
-          height="0.045"
-          depth="0.02"
-          material="color: #1e293b"
-        >
-          <a-text value="Mid Aisle" align="center" position="0 0 0.014" width="0.8" color="#38bdf8"></a-text>
-        </a-box>
       </a-entity>
 
       <!-- ============================================================
@@ -1035,17 +1075,17 @@
           <a-text value="📍 Row 1" align="center" rotation="-90 0 0" position="0 0.01 0" width="1.2" color="#ffffff"></a-text>
         </a-cylinder>
 
-        <!-- Pad 3: Seat 2A (Leo) -->
+        <!-- Pad 3: Seat 2A (Leo Hazard View) -->
         <a-cylinder
           class="clickable"
           vr-clickable="action: teleport:leo; hoverColor: #ef4444"
           position="-0.3 0.255 -0.5"
           radius="0.25"
           height="0.01"
-          material="color: #dc2626; opacity: 0.55; transparent: true; emissive: #dc2626; emissiveIntensity: 0.3"
+          material="color: #dc2626; opacity: 0.6; transparent: true; emissive: #dc2626; emissiveIntensity: 0.4"
         >
           <a-ring rotation="-90 0 0" radius-inner="0.23" radius-outer="0.25" material="color: #ef4444; shader: flat"></a-ring>
-          <a-text value="📍 Seat 2A" align="center" rotation="-90 0 0" position="0 0.01 0" width="1.2" color="#ffffff"></a-text>
+          <a-text value="📍 Seat 2A (Leo)" align="center" rotation="-90 0 0" position="0 0.01 0" width="1.2" color="#ffffff"></a-text>
         </a-cylinder>
 
         <!-- Pad 4: Mid Cabin -->
@@ -1090,7 +1130,7 @@
       </a-entity>
 
       <!-- ============================================================
-           BUS WINDOWS & SIMULATED SENSOR TRIPWIRE GRIDS
+           BUS WINDOWS & SENSOR TRIPWIRE GRIDS
            ============================================================ -->
       <a-entity id="windows-group">
         <a-entity id="window-frame-1A" position="-1.33 1.55 -2.0" rotation="0 0 0"></a-entity>
@@ -1142,13 +1182,15 @@
         this.targetSpeed = 45;
         this.currentScenario = 'normal';
         this.showSensorMesh = true;
+        this.isAutoDemoRunning = false;
+        this.autoDemoTimer = null;
 
         this.activeAlert = {
           title: 'ALL SYSTEMS SECURE',
           seat: 'NONE',
           type: 'NORMAL MONITORING',
           severity: 'SAFE',
-          description: 'All 8 window apertures within safe parameters (<=10cm).',
+          description: 'All 8 window apertures within safe limits (<=10cm).',
           time: '00:00:00',
           acknowledged: false
         };
@@ -1597,7 +1639,7 @@
         this.resetAllAvatars();
 
         document.querySelectorAll('.scenario-btn').forEach(b => b.classList.remove('active'));
-        const matched = Array.from(document.querySelectorAll('.scenario-btn')).find(b => b.getAttribute('onclick') && b.getAttribute('onclick').includes(scenarioKey));
+        const matched = document.getElementById(`btn-scen-${scenarioKey}`);
         if (matched) matched.classList.add('active');
 
         switch (scenarioKey) {
@@ -1620,9 +1662,81 @@
       }
 
       resetScenario() {
+        if (this.autoDemoTimer) clearTimeout(this.autoDemoTimer);
+        this.isAutoDemoRunning = false;
         this.targetSpeed = 45;
         this.selectScenario('normal');
         this.showToast('🔄 Simulation Reset to Normal Cruising');
+      }
+
+      // AUTOMATED DEMO TOUR (Auto-cycles through every safety scenario & response)
+      toggleAutoDemo() {
+        this.isAutoDemoRunning = !this.isAutoDemoRunning;
+        if (this.autoDemoTimer) clearTimeout(this.autoDemoTimer);
+
+        if (!this.isAutoDemoRunning) {
+          this.showToast('⏹️ Auto Tour Stopped');
+          this.resetScenario();
+          return;
+        }
+
+        this.showToast('▶ Auto Tour Started: Demonstrating Scenarios');
+        this.runAutoStep(0);
+      }
+
+      runAutoStep(stepIndex) {
+        if (!this.isAutoDemoRunning) return;
+
+        const steps = [
+          // 0: Scenario A
+          () => {
+            this.selectScenario('scenarioA');
+            this.autoDemoTimer = setTimeout(() => {
+              this.handleDriverAction('voice');
+              this.autoDemoTimer = setTimeout(() => this.runAutoStep(1), 3500);
+            }, 3000);
+          },
+          // 1: Scenario B
+          () => {
+            this.selectScenario('scenarioB');
+            this.autoDemoTimer = setTimeout(() => {
+              this.handleDriverAction('slow');
+              this.autoDemoTimer = setTimeout(() => {
+                this.handleDriverAction('voice');
+                this.autoDemoTimer = setTimeout(() => this.runAutoStep(2), 3500);
+              }, 2000);
+            }, 3000);
+          },
+          // 2: Scenario C
+          () => {
+            this.selectScenario('scenarioC');
+            this.autoDemoTimer = setTimeout(() => {
+              this.handleDriverAction('ack');
+              this.autoDemoTimer = setTimeout(() => {
+                this.handleDriverAction('voice');
+                this.autoDemoTimer = setTimeout(() => this.runAutoStep(3), 3500);
+              }, 2000);
+            }, 3000);
+          },
+          // 3: Scenario D
+          () => {
+            this.selectScenario('scenarioD');
+            this.autoDemoTimer = setTimeout(() => {
+              this.handleDriverAction('stop');
+              this.autoDemoTimer = setTimeout(() => {
+                this.showToast('✓ Auto Demo Complete! System Secured.');
+                this.targetSpeed = 45;
+                this.autoDemoTimer = setTimeout(() => this.selectScenario('normal'), 3000);
+              }, 3000);
+            }, 3000);
+          }
+        ];
+
+        if (stepIndex < steps.length) {
+          steps[stepIndex]();
+        } else {
+          this.isAutoDemoRunning = false;
+        }
       }
 
       setNormalState() {
@@ -1638,17 +1752,18 @@
           acknowledged: false
         };
         this.updateHUDHeader();
+        this.update3DDashboard();
         this.resetWindowSensors();
       }
 
       triggerScenarioA() {
         this.status = 'CRITICAL';
         this.activeAlert = {
-          title: 'CRITICAL: HEAD/BODY LEANING OUTSIDE',
+          title: 'HEAD/BODY LEANING OUTSIDE',
           seat: '2A',
           type: 'PERIMETER BREACH (TORSO)',
           severity: 'CRITICAL',
-          description: 'Child passenger extending upper torso through open window into traffic lane!',
+          description: 'Leo extending torso 28cm outside open window into traffic!',
           time: new Date().toLocaleTimeString(),
           acknowledged: false
         };
@@ -1661,20 +1776,21 @@
           pass.setAttribute('rotation', '0 0 38');
         }
 
-        this.highlightSensorGrid('2A', '#ef4444', 0.55);
+        this.highlightSensorGrid('2A', '#ef4444', 0.7);
         this.playAlarm('CRITICAL');
         this.logEvent('ALERT', 'CRITICAL BREACH: Torso Extrusion at Seat 2A', 'CRITICAL');
         this.updateHUDHeader();
+        this.update3DDashboard();
       }
 
       triggerScenarioB() {
         this.status = 'WARNING';
         this.activeAlert = {
-          title: 'WARNING: HAND EXTENDED OUTSIDE',
+          title: 'HAND EXTENDED OUTSIDE',
           seat: '3B',
           type: 'EXTREMITY PROTRUSION',
           severity: 'WARNING',
-          description: 'Passenger hand extended 18cm past window frame.',
+          description: 'Maya extending hand 18cm past window frame.',
           time: new Date().toLocaleTimeString(),
           acknowledged: false
         };
@@ -1687,20 +1803,21 @@
           armRight.setAttribute('rotation', '0 0 -85');
         }
 
-        this.highlightSensorGrid('3B', '#f59e0b', 0.45);
+        this.highlightSensorGrid('3B', '#f59e0b', 0.6);
         this.playAlarm('WARNING');
         this.logEvent('ALERT', 'Hand Protrusion Detected at Seat 3B', 'WARNING');
         this.updateHUDHeader();
+        this.update3DDashboard();
       }
 
       triggerScenarioC() {
         this.status = 'CAUTION';
         this.activeAlert = {
-          title: 'ALERT: WINDOW THRESHOLD EXCEEDED',
+          title: 'WINDOW THRESHOLD EXCEEDED',
           seat: '1A',
           type: 'APERTURE OVER-LIMIT (>15cm)',
           severity: 'CAUTION',
-          description: 'Window aperture opened to 28cm (Safe Limit: 10cm).',
+          description: 'Sam opened window sash to 28cm (Safe Limit: 10cm).',
           time: new Date().toLocaleTimeString(),
           acknowledged: false
         };
@@ -1713,20 +1830,21 @@
           armLeft.setAttribute('rotation', '0 0 45');
         }
 
-        this.highlightSensorGrid('1A', '#eab308', 0.35);
+        this.highlightSensorGrid('1A', '#eab308', 0.5);
         this.playAlarm('CAUTION');
         this.logEvent('ALERT', 'Window Aperture Threshold Exceeded at Seat 1A', 'CAUTION');
         this.updateHUDHeader();
+        this.update3DDashboard();
       }
 
       triggerScenarioD() {
         this.status = 'CRITICAL';
         this.activeAlert = {
-          title: 'HIGH ALERT: OBJECT THROWN OUTSIDE',
+          title: 'OBJECT THROWN OUTSIDE',
           seat: '4A',
           type: 'PROJECTILE DEPLOYED',
           severity: 'CRITICAL',
-          description: 'Object ejected at speed into oncoming roadway traffic!',
+          description: 'Ethan ejected object through window into roadway traffic!',
           time: new Date().toLocaleTimeString(),
           acknowledged: false
         };
@@ -1755,10 +1873,11 @@
           }, 40);
         }
 
-        this.highlightSensorGrid('4A', '#ef4444', 0.6);
+        this.highlightSensorGrid('4A', '#ef4444', 0.7);
         this.playAlarm('CRITICAL');
         this.logEvent('ALERT', 'Foreign Projectile Ejection at Seat 4A', 'CRITICAL');
         this.updateHUDHeader();
+        this.update3DDashboard();
       }
 
       resolvePassengerBehavior(seatId, message) {
@@ -1777,6 +1896,7 @@
         this.showToast(`🛡️ ${message}`);
         this.logEvent('RESOLVED', `Seat ${seatId}: ${message}`, 'SAFE');
         this.updateHUDHeader();
+        this.update3DDashboard();
         this.resetWindowSensors();
       }
 
@@ -1876,6 +1996,75 @@
         }
       }
 
+      // DIRECT 3D SDF TERMINAL UPDATES (Always updates, zero texture dependency!)
+      update3DDashboard() {
+        const bannerBg = document.getElementById('disp-banner-bg');
+        const bannerTitle = document.getElementById('disp-banner-title');
+        const bannerSub = document.getElementById('disp-banner-sub');
+        const dispLocation = document.getElementById('disp-location');
+        const dispDetail = document.getElementById('disp-detail');
+        const lightbar = document.getElementById('emergency-lightbar');
+
+        if (this.status === 'CRITICAL') {
+          if (bannerBg) bannerBg.setAttribute('material', 'color', '#dc2626');
+          if (bannerTitle) bannerTitle.setAttribute('value', '🚨 CRITICAL: ' + this.activeAlert.title);
+          if (bannerSub) bannerSub.setAttribute('value', 'LOCATION: SEAT ' + this.activeAlert.seat + ' | SEVERITY: CRITICAL');
+          if (dispLocation) dispLocation.setAttribute('value', 'BREACH AT SEAT ' + this.activeAlert.seat + ' | ACTION REQUIRED!');
+          if (dispDetail) dispDetail.setAttribute('value', this.activeAlert.description);
+          if (lightbar) {
+            lightbar.setAttribute('material', 'color', '#ef4444');
+            lightbar.setAttribute('material', 'emissive', '#ef4444');
+            lightbar.setAttribute('material', 'emissiveIntensity', '1.0');
+          }
+        } else if (this.status === 'WARNING') {
+          if (bannerBg) bannerBg.setAttribute('material', 'color', '#d97706');
+          if (bannerTitle) bannerTitle.setAttribute('value', '⚠️ WARNING: ' + this.activeAlert.title);
+          if (bannerSub) bannerSub.setAttribute('value', 'LOCATION: SEAT ' + this.activeAlert.seat + ' | SEVERITY: WARNING');
+          if (dispLocation) dispLocation.setAttribute('value', 'WARNING AT SEAT ' + this.activeAlert.seat);
+          if (dispDetail) dispDetail.setAttribute('value', this.activeAlert.description);
+          if (lightbar) {
+            lightbar.setAttribute('material', 'color', '#f59e0b');
+            lightbar.setAttribute('material', 'emissive', '#f59e0b');
+            lightbar.setAttribute('material', 'emissiveIntensity', '0.8');
+          }
+        } else if (this.status === 'CAUTION') {
+          if (bannerBg) bannerBg.setAttribute('material', 'color', '#ca8a04');
+          if (bannerTitle) bannerTitle.setAttribute('value', '⚡ CAUTION: ' + this.activeAlert.title);
+          if (bannerSub) bannerSub.setAttribute('value', 'LOCATION: SEAT ' + this.activeAlert.seat + ' | APERTURE LIMIT');
+          if (dispLocation) dispLocation.setAttribute('value', 'WINDOW OPEN OVER LIMIT (SEAT ' + this.activeAlert.seat + ')');
+          if (dispDetail) dispDetail.setAttribute('value', this.activeAlert.description);
+          if (lightbar) {
+            lightbar.setAttribute('material', 'color', '#eab308');
+            lightbar.setAttribute('material', 'emissive', '#eab308');
+            lightbar.setAttribute('material', 'emissiveIntensity', '0.6');
+          }
+        } else {
+          // NORMAL
+          if (bannerBg) bannerBg.setAttribute('material', 'color', '#059669');
+          if (bannerTitle) bannerTitle.setAttribute('value', '✓ ALL SYSTEMS SECURE');
+          if (bannerSub) bannerSub.setAttribute('value', 'All 8 Windows Within Safe Limits (<=10cm)');
+          if (dispLocation) dispLocation.setAttribute('value', 'MONITORED ZONE: CABIN SEATS 1A-4B');
+          if (dispDetail) dispDetail.setAttribute('value', 'Perimeter IR tripwire grids active. Cruising normal.');
+          if (lightbar) {
+            lightbar.setAttribute('material', 'color', '#10b981');
+            lightbar.setAttribute('material', 'emissive', '#10b981');
+            lightbar.setAttribute('material', 'emissiveIntensity', '0.3');
+          }
+        }
+
+        // Update 3D Seat status badges
+        ['1A', '2A', '3A', '4A', '1B', '2B', '3B', '4B'].forEach(id => {
+          const badge = document.getElementById('badge-seat-' + id);
+          if (badge) {
+            if (this.activeAlert.seat === id && this.status !== 'NORMAL') {
+              badge.setAttribute('material', 'color', '#ef4444');
+            } else {
+              badge.setAttribute('material', 'color', '#1e293b');
+            }
+          }
+        });
+      }
+
       teleportTo(dest) {
         const rig = document.getElementById('rig');
         if (!rig) return;
@@ -1894,6 +2083,7 @@
             rig.setAttribute('rotation', '0 0 0');
             break;
           case 'leo':
+            // Teleport right next to Leo's seat at 2A facing him!
             rig.setAttribute('position', '-0.3 0.1 -0.5');
             rig.setAttribute('rotation', '0 -90 0');
             break;
@@ -1911,14 +2101,16 @@
 
       startDashboardLoop() {
         const render = () => {
-          this.drawDashboard();
-          const screen = document.getElementById('dashboard-screen');
-          if (screen && screen.getObject3D('mesh')) {
-            const mesh = screen.getObject3D('mesh');
-            if (mesh.material && mesh.material.map) {
-              mesh.material.map.needsUpdate = true;
+          try {
+            this.drawDashboard();
+            const screen = document.getElementById('dashboard-screen');
+            if (screen && screen.getObject3D('mesh')) {
+              const mesh = screen.getObject3D('mesh');
+              if (mesh.material && mesh.material.map) {
+                mesh.material.map.needsUpdate = true;
+              }
             }
-          }
+          } catch (e) {}
           requestAnimationFrame(render);
         };
         requestAnimationFrame(render);
@@ -1926,6 +2118,7 @@
 
       drawDashboard() {
         const ctx = this.ctx;
+        if (!ctx) return;
         const w = this.canvas.width;
         const h = this.canvas.height;
 
@@ -2045,12 +2238,6 @@
           ctx.fillText(`[${log.time}] (${log.seat}) ${log.event}`, 380, logY);
           logY += 22;
         });
-
-        ctx.fillStyle = 'rgba(15, 23, 42, 0.9)';
-        ctx.fillRect(0, 400, w, 240);
-        ctx.fillStyle = '#64748b';
-        ctx.font = 'bold 12px "Segoe UI", sans-serif';
-        ctx.fillText('DIRECT DRIVER CONTROLS (POINT CONTROLLER RAY OR CLICK BUTTONS BELOW DISPLAY):', 40, 425);
       }
 
       drawSeatNode(ctx, seatId, x, y) {
@@ -2091,6 +2278,8 @@
 
           const speedLabel = document.getElementById('speed-label');
           if (speedLabel) speedLabel.textContent = `SPEED: ${Math.round(this.speed)} KM/H`;
+          const dispSpeed = document.getElementById('disp-speed');
+          if (dispSpeed) dispSpeed.setAttribute('value', `SPEED: ${Math.round(this.speed)} KM/H`);
 
           const moveDelta = (this.speed / 3.6) * dt;
           const dashes = document.querySelectorAll('.road-dash');
