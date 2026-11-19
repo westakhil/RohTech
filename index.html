@@ -138,7 +138,7 @@
       50% { opacity: 0.4; transform: scale(0.85); }
     }
 
-    /* Scenario Bar */
+    /* Bottom Scenario Bar (Hazard Selection) */
     .hud-scenarios {
       display: flex;
       justify-content: center;
@@ -366,7 +366,7 @@
   </style>
 
   <!-- ============================================================
-       CANVAS ROUNDRECT POLYFILL (Guarantees zero canvas crashes!)
+       CANVAS ROUNDRECT POLYFILL (Ensures Canvas drawing never throws!)
        ============================================================ -->
   <script>
     if (!CanvasRenderingContext2D.prototype.roundRect) {
@@ -391,7 +391,7 @@
 
   <!-- ============================================================
        CUSTOM A-FRAME COMPONENTS:
-       - quest-locomotion: Direct gamepad polling with velocity lerp & snap-turning
+       - quest-locomotion: Direct gamepad polling with velocity lerping & snap-turning
        - vr-clickable: Non-destructive, debounced 3D button interactions
        ============================================================ -->
   <script>
@@ -562,7 +562,6 @@
 <body>
   <!-- 2D Desktop HUD Layer -->
   <div id="desktop-hud">
-    <!-- Header -->
     <div class="hud-header">
       <div class="brand-group">
         <span class="logo-badge">WINDOWWISE</span>
@@ -584,7 +583,7 @@
       </div>
     </div>
 
-    <!-- Scenarios Navigation -->
+    <!-- Scenarios Navigation (Hazard Triggers) -->
     <div class="hud-scenarios">
       <button class="scenario-btn active" id="btn-scen-normal" onclick="windowwise.selectScenario('normal')">
         <span class="badge">NORMAL</span> Cruising
@@ -602,7 +601,7 @@
         <span class="badge">D</span> Object Thrown
       </button>
       <button class="scenario-btn" style="border-color:#10b981;" onclick="windowwise.toggleAutoDemo()">
-        ▶ Auto Demo Tour
+        ▶ Auto Tour
       </button>
       <button class="scenario-btn" style="border-color:#ef4444;" onclick="windowwise.resetScenario()">
         🔄 Reset
@@ -661,20 +660,20 @@
 
       <div class="features-list">
         <div class="feature-item">
-          <strong>Direct VR Dashboard</strong>
-          Prominent alert banners and seat indicators right in front of the driver.
+          <strong>Original Digital Board</strong>
+          Clean driver terminal with seat matrix map & active alert card.
         </div>
         <div class="feature-item">
-          <strong>Auto Demo Tour</strong>
-          One-click automated walkthrough of all 4 safety scenarios and responses.
+          <strong>Active Protections</strong>
+          Voice warning, auto-slow, and emergency stop actively secure the bus.
         </div>
         <div class="feature-item">
-          <strong>Floor Teleport Pads</strong>
-          Point laser & click glowing floor pads to jump to Seat 2A or back to driver.
+          <strong>Smooth VR Locomotion</strong>
+          Walk freely with thumbsticks or teleport to any passenger seat.
         </div>
         <div class="feature-item">
-          <strong>Tactile 3D Buttons</strong>
-          Reliable debounced controls with audible sirens and PA announcements.
+          <strong>Side Hazard Console</strong>
+          Quickly trigger any unsafe scenario directly from inside VR.
         </div>
       </div>
 
@@ -709,10 +708,7 @@
     <a-entity light="type: directional; color: #fffbeb; intensity: 1.3; position: 8 20 -10;"></a-entity>
     <a-entity light="type: point; color: #fef08a; intensity: 0.6; position: 0 2 -1; distance: 16;"></a-entity>
 
-    <!-- ============================================================
-         RIG & CONTROLLERS (META QUEST 3S 6DoF TOUCH & DESKTOP)
-         Spawned in the Driver's Seat facing forward down -Z
-         ============================================================ -->
+    <!-- RIG & CONTROLLERS (META QUEST 3S & DESKTOP) -->
     <a-entity
       id="rig"
       quest-locomotion="speed: 1.8; turnAngle: 30"
@@ -726,7 +722,6 @@
         wasd-controls="acceleration: 15"
       ></a-camera>
 
-      <!-- Meta Quest 3S Left Hand Controller -->
       <a-entity
         id="left-controller"
         laser-controls="hand: left"
@@ -735,7 +730,6 @@
         <a-sphere radius="0.015" color="#38bdf8" material="shader: flat"></a-sphere>
       </a-entity>
 
-      <!-- Meta Quest 3S Right Hand Controller -->
       <a-entity
         id="right-controller"
         laser-controls="hand: right"
@@ -747,12 +741,10 @@
 
     <!-- ============================================================
          THE BUS ENVIRONMENT
-         Front of bus is at -Z (windshield, steering, driver)
-         Rear of bus is at +Z (passenger rows 1 to 4, exit door)
          ============================================================ -->
     <a-entity id="school-bus" position="0 0 0">
 
-      <!-- Overhead Emergency Flashing Lightbar (above windshield) -->
+      <!-- Flashing Emergency Overhead Lightbar (above windshield) -->
       <a-box
         id="emergency-lightbar"
         position="0 2.2 -4.8"
@@ -777,200 +769,75 @@
       <a-plane position="-0.5 2.39 0" rotation="90 0 0" width="0.08" height="9" material="color: #ffffff; emissive: #ffffff; emissiveIntensity: 0.8; shader: flat"></a-plane>
       <a-plane position="0.5 2.39 0" rotation="90 0 0" width="0.08" height="9" material="color: #ffffff; emissive: #ffffff; emissiveIntensity: 0.8; shader: flat"></a-plane>
 
-      <!-- Front Wall & Windshield Pillar (at -Z) -->
+      <!-- Front Wall & Windshield -->
       <a-box position="0 1.3 -5.45" width="2.7" height="2.2" depth="0.1" material="color: #eab308; roughness: 0.4"></a-box>
       <a-plane position="0 1.6 -5.4" rotation="0 0 0" width="2.4" height="1.1" material="color: #bae6fd; opacity: 0.25; transparent: true; roughness: 0.1"></a-plane>
       
-      <!-- Rear Wall with Emergency Exit Door (at +Z) -->
+      <!-- Rear Wall with Emergency Exit Door -->
       <a-box position="0 1.3 5.45" width="2.7" height="2.2" depth="0.1" material="color: #eab308; roughness: 0.4"></a-box>
       <a-box position="0 1.15 5.39" width="0.9" height="1.8" depth="0.02" material="color: #ca8a04; roughness: 0.5"></a-box>
       <a-box position="0 1.7 5.38" width="0.6" height="0.5" depth="0.02" material="color: #93c5fd; opacity: 0.35; transparent: true"></a-box>
 
-      <!-- Side Lower Walls (Yellow Exterior) -->
+      <!-- Side Lower Walls -->
       <a-box position="-1.35 0.7 0" width="0.08" height="0.9" depth="11" material="color: #eab308; roughness: 0.4"></a-box>
       <a-box position="1.35 0.7 0" width="0.08" height="0.9" depth="11" material="color: #eab308; roughness: 0.4"></a-box>
       <a-box position="-1.35 2.25 0" width="0.08" height="0.3" depth="11" material="color: #ca8a04; roughness: 0.4"></a-box>
       <a-box position="1.35 2.25 0" width="0.08" height="0.3" depth="11" material="color: #ca8a04; roughness: 0.4"></a-box>
 
-      <!-- Yellow Grab Poles -->
+      <!-- Grab Poles -->
       <a-cylinder position="-0.4 1.3 0" radius="0.02" height="2.2" material="color: #facc15; metalness: 0.6; roughness: 0.3"></a-cylinder>
       <a-cylinder position="0.4 1.3 0" radius="0.02" height="2.2" material="color: #facc15; metalness: 0.6; roughness: 0.3"></a-cylinder>
       <a-cylinder position="-0.4 2.15 0" rotation="90 0 0" radius="0.02" height="10" material="color: #facc15; metalness: 0.6; roughness: 0.3"></a-cylinder>
       <a-cylinder position="0.4 2.15 0" rotation="90 0 0" radius="0.02" height="10" material="color: #facc15; metalness: 0.6; roughness: 0.3"></a-cylinder>
 
-      <!-- ============================================================
-           DRIVER AREA (FRONT LEFT AT -Z)
-           ============================================================ -->
+      <!-- DRIVER STATION -->
       <a-entity id="driver-station" position="-0.7 0 -4.0">
-        <!-- Driver Seat Base & Cushion -->
         <a-box position="0 0.45 0.5" width="0.55" height="0.4" depth="0.55" material="color: #1e293b; roughness: 0.8"></a-box>
         <a-box position="0 0.95 0.73" width="0.55" height="0.7" depth="0.12" material="color: #0f172a; roughness: 0.7"></a-box>
         <a-cylinder position="0 0.25 0.5" radius="0.05" height="0.4" material="color: #475569; metalness: 0.8"></a-cylinder>
 
-        <!-- Driver Steering Console & Binnacle -->
         <a-box position="0 0.85 -0.3" rotation="20 0 0" width="0.75" height="0.4" depth="0.55" material="color: #1e293b; roughness: 0.5"></a-box>
         <a-cylinder position="0 0.95 -0.25" rotation="50 0 0" radius="0.03" height="0.4" material="color: #334155; metalness: 0.5"></a-cylinder>
         <a-torus position="0 1.1 -0.12" rotation="-40 0 0" radius="0.22" radius-tubular="0.018" material="color: #020617; roughness: 0.3"></a-torus>
         <a-plane position="0 0.98 -0.29" rotation="45 0 0" width="0.35" height="0.12" material="color: #0284c7; emissive: #0284c7; emissiveIntensity: 0.6; shader: flat"></a-plane>
 
-        <!-- Interior Rear-view Convex Mirror -->
         <a-box position="0.5 2.05 -0.4" rotation="-10 0 0" width="0.55" height="0.2" depth="0.02" material="color: #e2e8f0; metalness: 0.9; roughness: 0.1"></a-box>
         <a-cylinder position="0.5 2.2 -0.4" radius="0.015" height="0.2" material="color: #475569"></a-cylinder>
       </a-entity>
 
       <!-- ============================================================
-           WINDOWWISE DRIVER MONITORING DASHBOARD (3D INTERACTIVE)
-           Contains Direct Native 3D SDF Text & Alert Banners!
+           THE ORIGINAL WINDOWWISE DRIVER MONITORING DASHBOARD ("OLD BOARD")
+           Restored to the clean, high-resolution digital display screen!
            ============================================================ -->
       <a-entity id="windowwise-terminal" position="-0.15 1.15 -4.05" rotation="10 25 0">
         <!-- Terminal Housing -->
-        <a-box position="0 0 0" width="0.88" height="0.66" depth="0.04" material="color: #090d16; roughness: 0.4; metalness: 0.7"></a-box>
-        <a-cylinder position="0 -0.36 -0.05" rotation="-15 0 0" radius="0.025" height="0.45" material="color: #334155; metalness: 0.8"></a-cylinder>
+        <a-box position="0 0 0" width="0.86" height="0.56" depth="0.04" material="color: #090d16; roughness: 0.4; metalness: 0.7"></a-box>
+        <a-cylinder position="0 -0.32 -0.05" rotation="-15 0 0" radius="0.025" height="0.4" material="color: #334155; metalness: 0.8"></a-cylinder>
         
-        <!-- Screen Background -->
-        <a-plane position="0 0.05 0.022" width="0.84" height="0.46" material="color: #0b1120; shader: flat"></a-plane>
-
-        <!-- TOP BAR: Logo & Speed -->
-        <a-text value="WINDOWWISE SAFETY TERMINAL" position="-0.4 0.25 0.025" width="0.8" color="#f59e0b" font="roboto"></a-text>
-        <a-text id="disp-speed" value="SPEED: 45 KM/H" position="0.18 0.25 0.025" width="0.8" color="#38bdf8" font="roboto"></a-text>
-
-        <!-- DYNAMIC PRIMARY ALERT BANNER (High Visibility In VR!) -->
+        <!-- Live Dashboard Canvas Display Screen -->
         <a-plane
-          id="disp-banner-bg"
-          position="0 0.16 0.025"
-          width="0.80"
-          height="0.11"
-          material="color: #059669; shader: flat"
-        >
-          <a-text
-            id="disp-banner-title"
-            value="✓ ALL SYSTEMS SECURE"
-            align="center"
-            position="0 0.02 0.01"
-            width="1.3"
-            color="#ffffff"
-            font="roboto"
-          ></a-text>
-          <a-text
-            id="disp-banner-sub"
-            value="All 8 Windows Within Safe Limits (<=10cm)"
-            align="center"
-            position="0 -0.03 0.01"
-            width="0.85"
-            color="#e2e8f0"
-            font="roboto"
-          ></a-text>
-        </a-plane>
+          id="dashboard-screen"
+          position="0 0 0.022"
+          width="0.82"
+          height="0.52"
+          material="shader: flat; src: #dashboard-canvas; transparent: false;"
+        ></a-plane>
 
-        <!-- TELEMETRY & INCIDENT DETAIL BOX -->
-        <a-plane position="0 0.04 0.025" width="0.80" height="0.10" material="color: #111827; shader: flat">
-          <a-text id="disp-location" value="MONITORED ZONE: CABIN SEATS 1A-4B" position="-0.38 0.025 0.01" width="0.8" color="#38bdf8"></a-text>
-          <a-text id="disp-detail" value="Perimeter IR tripwire grids active. Cruising normal." position="-0.38 -0.015 0.01" width="0.75" color="#cbd5e1"></a-text>
-        </a-plane>
-
-        <!-- 8 SEAT STATUS INDICATOR BADGES (Live Matrix Map) -->
-        <a-entity position="0 -0.04 0.025">
-          <!-- Row 1 -->
-          <a-box id="badge-seat-1A" position="-0.3 0 0" width="0.08" height="0.04" depth="0.01" material="color: #1e293b">
-            <a-text value="1A" align="center" position="0 0 0.008" width="0.7" color="#fff"></a-text>
-          </a-box>
-          <a-box id="badge-seat-1B" position="-0.2 0 0" width="0.08" height="0.04" depth="0.01" material="color: #1e293b">
-            <a-text value="1B" align="center" position="0 0 0.008" width="0.7" color="#fff"></a-text>
-          </a-box>
-
-          <!-- Row 2 (Leo) -->
-          <a-box id="badge-seat-2A" position="-0.08 0 0" width="0.08" height="0.04" depth="0.01" material="color: #1e293b">
-            <a-text value="2A" align="center" position="0 0 0.008" width="0.7" color="#fff"></a-text>
-          </a-box>
-          <a-box id="badge-seat-2B" position="0.02 0 0" width="0.08" height="0.04" depth="0.01" material="color: #1e293b">
-            <a-text value="2B" align="center" position="0 0 0.008" width="0.7" color="#fff"></a-text>
-          </a-box>
-
-          <!-- Row 3 (Maya) -->
-          <a-box id="badge-seat-3A" position="0.14 0 0" width="0.08" height="0.04" depth="0.01" material="color: #1e293b">
-            <a-text value="3A" align="center" position="0 0 0.008" width="0.7" color="#fff"></a-text>
-          </a-box>
-          <a-box id="badge-seat-3B" position="0.24 0 0" width="0.08" height="0.04" depth="0.01" material="color: #1e293b">
-            <a-text value="3B" align="center" position="0 0 0.008" width="0.7" color="#fff"></a-text>
-          </a-box>
-
-          <!-- Row 4 (Ethan) -->
-          <a-box id="badge-seat-4A" position="0.34 0 0" width="0.08" height="0.04" depth="0.01" material="color: #1e293b">
-            <a-text value="4A" align="center" position="0 0 0.008" width="0.7" color="#fff"></a-text>
-          </a-box>
-        </a-entity>
-
-        <!-- ============================================================
-             ON-DASHBOARD SCENARIO SELECTOR (Right in Driver's Direct View!)
-             ============================================================ -->
-        <a-entity position="0 -0.11 0.045">
-          <a-text value="SELECT SCENARIO TO TEST:" position="-0.4 0.035 0" width="0.65" color="#f59e0b"></a-text>
-
-          <a-box
-            class="clickable"
-            vr-clickable="action: scenario:scenarioA; hoverColor: #ef4444"
-            position="-0.32 0 0"
-            width="0.18"
-            height="0.04"
-            depth="0.02"
-            material="color: #dc2626"
-          >
-            <a-text value="A: Leaning" align="center" position="0 0 0.012" width="0.7" color="#fff"></a-text>
-          </a-box>
-
-          <a-box
-            class="clickable"
-            vr-clickable="action: scenario:scenarioB; hoverColor: #f59e0b"
-            position="-0.12 0 0"
-            width="0.18"
-            height="0.04"
-            depth="0.02"
-            material="color: #d97706"
-          >
-            <a-text value="B: Hand Out" align="center" position="0 0 0.012" width="0.7" color="#fff"></a-text>
-          </a-box>
-
-          <a-box
-            class="clickable"
-            vr-clickable="action: scenario:scenarioC; hoverColor: #eab308"
-            position="0.08 0 0"
-            width="0.18"
-            height="0.04"
-            depth="0.02"
-            material="color: #ca8a04"
-          >
-            <a-text value="C: Limit Ext" align="center" position="0 0 0.012" width="0.7" color="#fff"></a-text>
-          </a-box>
-
-          <a-box
-            class="clickable"
-            vr-clickable="action: scenario:scenarioD; hoverColor: #ec4899"
-            position="0.28 0 0"
-            width="0.18"
-            height="0.04"
-            depth="0.02"
-            material="color: #be185d"
-          >
-            <a-text value="D: Throw Obj" align="center" position="0 0 0.012" width="0.7" color="#fff"></a-text>
-          </a-box>
-        </a-entity>
-
-        <!-- ============================================================
-             DRIVER PREVENTATIVE ACTION BUTTONS
-             ============================================================ -->
-        <a-entity position="0 -0.19 0.045">
+        <!-- Driver Preventative Action Buttons (Below Screen on Terminal) -->
+        <!-- Row 1: Voice Warning, Slow Down, Stop Bus -->
+        <a-entity position="0 -0.17 0.045">
           <!-- Voice Warning Button -->
           <a-box
             id="btn-voice"
             class="clickable"
             vr-clickable="action: voice; hoverColor: #38bdf8"
-            position="-0.28 0 0"
+            position="-0.27 0 0"
             width="0.23"
-            height="0.065"
+            height="0.07"
             depth="0.025"
             material="color: #0284c7; roughness: 0.3"
           >
-            <a-text value="📢 VOICE WARN" align="center" position="0 0 0.015" width="0.9" color="#ffffff"></a-text>
+            <a-text value="📢 VOICE WARN" align="center" position="0 0 0.015" width="0.95" color="#ffffff"></a-text>
           </a-box>
 
           <!-- Slow Down Button -->
@@ -979,12 +846,12 @@
             class="clickable"
             vr-clickable="action: slow; hoverColor: #fbbf24"
             position="0 0 0"
-            width="0.22"
-            height="0.065"
+            width="0.21"
+            height="0.07"
             depth="0.025"
             material="color: #d97706; roughness: 0.3"
           >
-            <a-text value="⚠️ SLOW DOWN" align="center" position="0 0 0.015" width="0.9" color="#ffffff"></a-text>
+            <a-text value="⚠️ SLOW DOWN" align="center" position="0 0 0.015" width="0.95" color="#ffffff"></a-text>
           </a-box>
 
           <!-- Stop Bus Button -->
@@ -992,61 +859,176 @@
             id="btn-stop"
             class="clickable"
             vr-clickable="action: stop; hoverColor: #ef4444"
-            position="0.27 0 0"
+            position="0.26 0 0"
             width="0.22"
-            height="0.065"
+            height="0.07"
             depth="0.025"
             material="color: #dc2626; roughness: 0.3"
           >
-            <a-text value="🛑 STOP BUS" align="center" position="0 0 0.015" width="0.9" color="#ffffff"></a-text>
+            <a-text value="🛑 STOP BUS" align="center" position="0 0 0.015" width="0.95" color="#ffffff"></a-text>
           </a-box>
         </a-entity>
 
-        <!-- Row 2: Acknowledge & Quick Jump to Seat 2A -->
-        <a-entity position="0 -0.26 0.045">
+        <!-- Row 2: Acknowledge & Notify Attendant -->
+        <a-entity position="0 -0.245 0.045">
+          <!-- Acknowledge Button -->
           <a-box
             id="btn-ack"
             class="clickable"
             vr-clickable="action: ack; hoverColor: #34d399"
-            position="-0.24 0 0"
-            width="0.22"
-            height="0.055"
+            position="-0.15 0 0"
+            width="0.27"
+            height="0.06"
             depth="0.025"
             material="color: #10b981; roughness: 0.3"
           >
-            <a-text value="✓ ACKNOWLEDGE" align="center" position="0 0 0.015" width="0.85" color="#ffffff"></a-text>
+            <a-text value="✓ ACKNOWLEDGE" align="center" position="0 0 0.015" width="0.9" color="#ffffff"></a-text>
           </a-box>
 
-          <!-- Quick Jump To Hazard / Back to Driver -->
+          <!-- Notify Attendant Button -->
           <a-box
+            id="btn-notify"
             class="clickable"
-            vr-clickable="action: teleport:leo; hoverColor: #ef4444"
-            position="0.02 0 0"
-            width="0.24"
-            height="0.055"
+            vr-clickable="action: notify; hoverColor: #818cf8"
+            position="0.16 0 0"
+            width="0.27"
+            height="0.06"
             depth="0.025"
-            material="color: #7c3aed; roughness: 0.3"
+            material="color: #6366f1; roughness: 0.3"
           >
-            <a-text value="👁️ JUMP TO HAZARD" align="center" position="0 0 0.015" width="0.8" color="#ffffff"></a-text>
-          </a-box>
-
-          <!-- Auto Tour Button -->
-          <a-box
-            class="clickable"
-            vr-clickable="action: autodemo; hoverColor: #38bdf8"
-            position="0.27 0 0"
-            width="0.21"
-            height="0.055"
-            depth="0.025"
-            material="color: #475569; roughness: 0.3"
-          >
-            <a-text value="▶ AUTO TOUR" align="center" position="0 0 0.015" width="0.8" color="#38bdf8"></a-text>
+            <a-text value="🔔 NOTIFY ATTENDANT" align="center" position="0 0 0.015" width="0.9" color="#ffffff"></a-text>
           </a-box>
         </a-entity>
       </a-entity>
 
       <!-- ============================================================
-           GLOWING FLOOR TELEPORT PADS (POINT LASER & CLICK TO JUMP)
+           SIDE HAZARD SIMULATION CONSOLE (MOUNTED TO DRIVER'S SIDE)
+           Conveniently located to the driver's left console for triggering hazards!
+           ============================================================ -->
+      <a-entity id="vr-hazard-console" position="-1.15 1.15 -3.7" rotation="0 75 0">
+        <a-box position="0 0 0" width="0.75" height="0.55" depth="0.03" material="color: #0b1120; roughness: 0.4"></a-box>
+        <a-text value="⚡ HAZARD TRIGGER CONSOLE" position="0 0.22 0.02" align="center" width="1.1" color="#f59e0b" font="roboto"></a-text>
+
+        <!-- Hazard A: Leaning Out -->
+        <a-box
+          class="clickable"
+          vr-clickable="action: scenario:scenarioA; hoverColor: #ef4444"
+          position="-0.22 0.12 0.025"
+          width="0.28"
+          height="0.07"
+          depth="0.02"
+          material="color: #b91c1c"
+        >
+          <a-text value="A: LEANING OUT" align="center" position="0 0 0.014" width="0.8" color="#fff"></a-text>
+        </a-box>
+
+        <!-- Hazard B: Hand Out -->
+        <a-box
+          class="clickable"
+          vr-clickable="action: scenario:scenarioB; hoverColor: #f59e0b"
+          position="0.22 0.12 0.025"
+          width="0.28"
+          height="0.07"
+          depth="0.02"
+          material="color: #b45309"
+        >
+          <a-text value="B: HAND OUT" align="center" position="0 0 0.014" width="0.8" color="#fff"></a-text>
+        </a-box>
+
+        <!-- Hazard C: Window Limit -->
+        <a-box
+          class="clickable"
+          vr-clickable="action: scenario:scenarioC; hoverColor: #eab308"
+          position="-0.22 0.02 0.025"
+          width="0.28"
+          height="0.07"
+          depth="0.02"
+          material="color: #854d0e"
+        >
+          <a-text value="C: WINDOW LIMIT" align="center" position="0 0 0.014" width="0.8" color="#fff"></a-text>
+        </a-box>
+
+        <!-- Hazard D: Throw Object -->
+        <a-box
+          class="clickable"
+          vr-clickable="action: scenario:scenarioD; hoverColor: #ec4899"
+          position="0.22 0.02 0.025"
+          width="0.28"
+          height="0.07"
+          depth="0.02"
+          material="color: #9d174d"
+        >
+          <a-text value="D: THROW OBJECT" align="center" position="0 0 0.014" width="0.8" color="#fff"></a-text>
+        </a-box>
+
+        <!-- Reset Cruising -->
+        <a-box
+          class="clickable"
+          vr-clickable="action: scenario:normal; hoverColor: #10b981"
+          position="-0.16 -0.09 0.025"
+          width="0.34"
+          height="0.07"
+          depth="0.02"
+          material="color: #047857"
+        >
+          <a-text value="🔄 RESET NORMAL" align="center" position="0 0 0.014" width="0.8" color="#fff"></a-text>
+        </a-box>
+
+        <!-- Auto Tour -->
+        <a-box
+          class="clickable"
+          vr-clickable="action: autodemo; hoverColor: #38bdf8"
+          position="0.22 -0.09 0.025"
+          width="0.26"
+          height="0.07"
+          depth="0.02"
+          material="color: #0284c7"
+        >
+          <a-text value="▶ AUTO TOUR" align="center" position="0 0 0.014" width="0.8" color="#fff"></a-text>
+        </a-box>
+
+        <!-- Quick Jump Buttons -->
+        <a-text value="📍 QUICK JUMP:" position="-0.32 -0.19 0.02" width="0.75" color="#94a3b8"></a-text>
+        
+        <a-box
+          class="clickable"
+          vr-clickable="action: teleport:driver; hoverColor: #38bdf8"
+          position="-0.2 -0.23 0.025"
+          width="0.18"
+          height="0.045"
+          depth="0.02"
+          material="color: #1e293b"
+        >
+          <a-text value="Driver" align="center" position="0 0 0.014" width="0.8" color="#38bdf8"></a-text>
+        </a-box>
+
+        <a-box
+          class="clickable"
+          vr-clickable="action: teleport:leo; hoverColor: #ef4444"
+          position="0 -0.23 0.025"
+          width="0.18"
+          height="0.045"
+          depth="0.02"
+          material="color: #1e293b"
+        >
+          <a-text value="Seat 2A" align="center" position="0 0 0.014" width="0.8" color="#ef4444"></a-text>
+        </a-box>
+
+        <a-box
+          class="clickable"
+          vr-clickable="action: teleport:mid; hoverColor: #38bdf8"
+          position="0.2 -0.23 0.025"
+          width="0.18"
+          height="0.045"
+          depth="0.02"
+          material="color: #1e293b"
+        >
+          <a-text value="Mid Aisle" align="center" position="0 0 0.014" width="0.8" color="#38bdf8"></a-text>
+        </a-box>
+      </a-entity>
+
+      <!-- ============================================================
+           GLOWING FLOOR TELEPORT PADS
            ============================================================ -->
       <a-entity id="floor-teleport-pads">
         <!-- Pad 1: Driver Area -->
@@ -1353,11 +1335,13 @@
 
       speak(text) {
         if ('speechSynthesis' in window) {
-          window.speechSynthesis.cancel();
-          const utterance = new SpeechSynthesisUtterance(text);
-          utterance.rate = 1.05;
-          utterance.pitch = 1.0;
-          window.speechSynthesis.speak(utterance);
+          try {
+            window.speechSynthesis.cancel();
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.rate = 1.05;
+            utterance.pitch = 1.0;
+            window.speechSynthesis.speak(utterance);
+          } catch (e) {}
         }
       }
 
@@ -1574,65 +1558,85 @@
         }
       }
 
+      // ============================================================
+      // DRIVER PREVENTATIVE ACTIONS (PROTECTIVE MEASURES)
+      // When pressed, these ALWAYS actively mitigate and resolve the hazard!
+      // ============================================================
       handleDriverAction(action) {
         this.initAudio();
         this.playBeep(800, 0.08);
+
+        const currentSeat = this.activeAlert.seat !== 'NONE' ? this.activeAlert.seat : '2A';
 
         switch (action) {
           case 'voice':
             this.showToast('📢 Driver issued PA Voice Warning');
             if (this.currentScenario === 'scenarioA') {
               this.speak('Attention Leo at Seat 2A! Please pull your head and body back inside the bus immediately!');
-              setTimeout(() => this.resolvePassengerBehavior('2A', 'Leo safely seated inside.'), 2200);
             } else if (this.currentScenario === 'scenarioB') {
               this.speak('Attention Maya at Seat 3B. Please bring your arm inside the window.');
-              setTimeout(() => this.resolvePassengerBehavior('3B', 'Maya pulled arm inside.'), 2000);
             } else if (this.currentScenario === 'scenarioC') {
               this.speak('Sam at Seat 1A, please do not open the window past the safety mark.');
-              setTimeout(() => this.resolvePassengerBehavior('1A', 'Window closed to safe limit.'), 2000);
             } else if (this.currentScenario === 'scenarioD') {
               this.speak('Ethan at Seat 4A! Throwing objects out of the bus is strictly prohibited!');
-              setTimeout(() => this.resolvePassengerBehavior('4A', 'Hazard averted. Incident logged.'), 2000);
             } else {
-              this.speak('Attention all passengers: Please ensure windows remain at safe limits.');
+              this.speak('Attention all passengers: Please keep hands and head inside windows.');
             }
-            this.logEvent('DRIVER', 'PA Voice Warning Broadcasted', 'ACTION');
+            // Actively retract passenger and resolve hazard
+            setTimeout(() => {
+              this.resolvePassengerBehavior(currentSeat, 'Passenger complied with PA warning and seated safely.');
+            }, 1200);
+            this.logEvent('DRIVER', 'PA Voice Warning Issued -> Hazard Mitigated', 'ACTION');
             break;
 
           case 'slow':
             this.targetSpeed = 15;
             this.playBrakeHiss();
             this.showToast('⚠️ Vehicle Slowing to Caution Speed (15 km/h)');
-            this.logEvent('DRIVER', 'Vehicle Speed Reduced to 15 km/h', 'ACTION');
+            // Actively retract passenger and resolve hazard safely
+            setTimeout(() => {
+              this.resolvePassengerBehavior(currentSeat, 'Vehicle slowed down safely. Hazard cleared.');
+            }, 1400);
+            this.logEvent('DRIVER', 'Speed Reduced to 15 km/h -> Hazard Mitigated', 'ACTION');
             break;
 
           case 'stop':
             this.targetSpeed = 0;
             this.playBrakeHiss();
-            this.showToast('🛑 Bus Coming to Complete Stop');
-            this.logEvent('DRIVER', 'Emergency Bus Stop Activated', 'ACTION');
+            this.showToast('🛑 Emergency Bus Stop Activated');
+            // Actively retract passenger and resolve hazard
             setTimeout(() => {
-              if (this.currentScenario !== 'normal') {
-                this.resolvePassengerBehavior(this.activeAlert.seat, 'Bus halted safely. Attendant inspected.');
-              }
-            }, 1800);
+              this.resolvePassengerBehavior(currentSeat, 'Bus halted safely. Attendant inspected cabin.');
+            }, 1500);
+            this.logEvent('DRIVER', 'Emergency Stop Activated -> Cabin Secured', 'ACTION');
             break;
 
           case 'ack':
             this.activeAlert.acknowledged = true;
             this.stopAlarm();
             this.showToast('✓ Alert Acknowledged by Driver');
-            this.logEvent('DRIVER', `Alert for Seat ${this.activeAlert.seat} Acknowledged`, 'ACK');
+            // Actively retract passenger and resolve hazard
+            setTimeout(() => {
+              this.resolvePassengerBehavior(currentSeat, 'Alert acknowledged. Passenger area secured.');
+            }, 800);
+            this.logEvent('DRIVER', `Alert for Seat ${currentSeat} Acknowledged`, 'ACK');
             break;
 
           case 'notify':
             this.playBeep(950, 0.2);
             this.showToast('🔔 Notification Dispatched to Bus Attendant & Dispatch');
-            this.logEvent('DRIVER', `Attendant Alert Dispatched -> Seat ${this.activeAlert.seat}`, 'ACTION');
+            // Actively retract passenger and resolve hazard
+            setTimeout(() => {
+              this.resolvePassengerBehavior(currentSeat, 'Attendant responded and verified window safety.');
+            }, 1200);
+            this.logEvent('DRIVER', `Attendant Alert Dispatched -> Seat ${currentSeat}`, 'ACTION');
             break;
         }
       }
 
+      // ============================================================
+      // HAZARD SCENARIO TRIGGERS
+      // ============================================================
       selectScenario(scenarioKey) {
         this.initAudio();
         this.currentScenario = scenarioKey;
@@ -1669,7 +1673,6 @@
         this.showToast('🔄 Simulation Reset to Normal Cruising');
       }
 
-      // AUTOMATED DEMO TOUR (Auto-cycles through every safety scenario & response)
       toggleAutoDemo() {
         this.isAutoDemoRunning = !this.isAutoDemoRunning;
         if (this.autoDemoTimer) clearTimeout(this.autoDemoTimer);
@@ -1701,21 +1704,15 @@
             this.selectScenario('scenarioB');
             this.autoDemoTimer = setTimeout(() => {
               this.handleDriverAction('slow');
-              this.autoDemoTimer = setTimeout(() => {
-                this.handleDriverAction('voice');
-                this.autoDemoTimer = setTimeout(() => this.runAutoStep(2), 3500);
-              }, 2000);
+              this.autoDemoTimer = setTimeout(() => this.runAutoStep(2), 3500);
             }, 3000);
           },
           // 2: Scenario C
           () => {
             this.selectScenario('scenarioC');
             this.autoDemoTimer = setTimeout(() => {
-              this.handleDriverAction('ack');
-              this.autoDemoTimer = setTimeout(() => {
-                this.handleDriverAction('voice');
-                this.autoDemoTimer = setTimeout(() => this.runAutoStep(3), 3500);
-              }, 2000);
+              this.handleDriverAction('voice');
+              this.autoDemoTimer = setTimeout(() => this.runAutoStep(3), 3500);
             }, 3000);
           },
           // 3: Scenario D
@@ -1752,24 +1749,26 @@
           acknowledged: false
         };
         this.updateHUDHeader();
-        this.update3DDashboard();
+        this.updateLightbar();
         this.resetWindowSensors();
       }
 
       triggerScenarioA() {
         this.status = 'CRITICAL';
         this.activeAlert = {
-          title: 'HEAD/BODY LEANING OUTSIDE',
+          title: 'CRITICAL: HEAD/BODY LEANING OUTSIDE',
           seat: '2A',
           type: 'PERIMETER BREACH (TORSO)',
           severity: 'CRITICAL',
-          description: 'Leo extending torso 28cm outside open window into traffic!',
+          description: 'Leo extending upper torso 28cm outside open window into traffic!',
           time: new Date().toLocaleTimeString(),
           acknowledged: false
         };
 
+        // Open window 2A
         this.setWindowAperture('2A', 0.38);
 
+        // Animate Leo leaning out
         const pass = document.getElementById('passenger-2A');
         if (pass) {
           pass.setAttribute('position', '-0.38 0.65 -0.05');
@@ -1780,13 +1779,13 @@
         this.playAlarm('CRITICAL');
         this.logEvent('ALERT', 'CRITICAL BREACH: Torso Extrusion at Seat 2A', 'CRITICAL');
         this.updateHUDHeader();
-        this.update3DDashboard();
+        this.updateLightbar();
       }
 
       triggerScenarioB() {
         this.status = 'WARNING';
         this.activeAlert = {
-          title: 'HAND EXTENDED OUTSIDE',
+          title: 'WARNING: HAND EXTENDED OUTSIDE',
           seat: '3B',
           type: 'EXTREMITY PROTRUSION',
           severity: 'WARNING',
@@ -1807,13 +1806,13 @@
         this.playAlarm('WARNING');
         this.logEvent('ALERT', 'Hand Protrusion Detected at Seat 3B', 'WARNING');
         this.updateHUDHeader();
-        this.update3DDashboard();
+        this.updateLightbar();
       }
 
       triggerScenarioC() {
         this.status = 'CAUTION';
         this.activeAlert = {
-          title: 'WINDOW THRESHOLD EXCEEDED',
+          title: 'ALERT: WINDOW THRESHOLD EXCEEDED',
           seat: '1A',
           type: 'APERTURE OVER-LIMIT (>15cm)',
           severity: 'CAUTION',
@@ -1834,13 +1833,13 @@
         this.playAlarm('CAUTION');
         this.logEvent('ALERT', 'Window Aperture Threshold Exceeded at Seat 1A', 'CAUTION');
         this.updateHUDHeader();
-        this.update3DDashboard();
+        this.updateLightbar();
       }
 
       triggerScenarioD() {
         this.status = 'CRITICAL';
         this.activeAlert = {
-          title: 'OBJECT THROWN OUTSIDE',
+          title: 'HIGH ALERT: OBJECT THROWN OUTSIDE',
           seat: '4A',
           type: 'PROJECTILE DEPLOYED',
           severity: 'CRITICAL',
@@ -1877,9 +1876,10 @@
         this.playAlarm('CRITICAL');
         this.logEvent('ALERT', 'Foreign Projectile Ejection at Seat 4A', 'CRITICAL');
         this.updateHUDHeader();
-        this.update3DDashboard();
+        this.updateLightbar();
       }
 
+      // Resolves passenger posture, closes window, resets sensors, updates dashboard
       resolvePassengerBehavior(seatId, message) {
         this.resetAllAvatars();
         this.stopAlarm();
@@ -1896,7 +1896,7 @@
         this.showToast(`🛡️ ${message}`);
         this.logEvent('RESOLVED', `Seat ${seatId}: ${message}`, 'SAFE');
         this.updateHUDHeader();
-        this.update3DDashboard();
+        this.updateLightbar();
         this.resetWindowSensors();
       }
 
@@ -1996,73 +1996,27 @@
         }
       }
 
-      // DIRECT 3D SDF TERMINAL UPDATES (Always updates, zero texture dependency!)
-      update3DDashboard() {
-        const bannerBg = document.getElementById('disp-banner-bg');
-        const bannerTitle = document.getElementById('disp-banner-title');
-        const bannerSub = document.getElementById('disp-banner-sub');
-        const dispLocation = document.getElementById('disp-location');
-        const dispDetail = document.getElementById('disp-detail');
+      updateLightbar() {
         const lightbar = document.getElementById('emergency-lightbar');
+        if (!lightbar) return;
 
         if (this.status === 'CRITICAL') {
-          if (bannerBg) bannerBg.setAttribute('material', 'color', '#dc2626');
-          if (bannerTitle) bannerTitle.setAttribute('value', '🚨 CRITICAL: ' + this.activeAlert.title);
-          if (bannerSub) bannerSub.setAttribute('value', 'LOCATION: SEAT ' + this.activeAlert.seat + ' | SEVERITY: CRITICAL');
-          if (dispLocation) dispLocation.setAttribute('value', 'BREACH AT SEAT ' + this.activeAlert.seat + ' | ACTION REQUIRED!');
-          if (dispDetail) dispDetail.setAttribute('value', this.activeAlert.description);
-          if (lightbar) {
-            lightbar.setAttribute('material', 'color', '#ef4444');
-            lightbar.setAttribute('material', 'emissive', '#ef4444');
-            lightbar.setAttribute('material', 'emissiveIntensity', '1.0');
-          }
+          lightbar.setAttribute('material', 'color', '#ef4444');
+          lightbar.setAttribute('material', 'emissive', '#ef4444');
+          lightbar.setAttribute('material', 'emissiveIntensity', '1.0');
         } else if (this.status === 'WARNING') {
-          if (bannerBg) bannerBg.setAttribute('material', 'color', '#d97706');
-          if (bannerTitle) bannerTitle.setAttribute('value', '⚠️ WARNING: ' + this.activeAlert.title);
-          if (bannerSub) bannerSub.setAttribute('value', 'LOCATION: SEAT ' + this.activeAlert.seat + ' | SEVERITY: WARNING');
-          if (dispLocation) dispLocation.setAttribute('value', 'WARNING AT SEAT ' + this.activeAlert.seat);
-          if (dispDetail) dispDetail.setAttribute('value', this.activeAlert.description);
-          if (lightbar) {
-            lightbar.setAttribute('material', 'color', '#f59e0b');
-            lightbar.setAttribute('material', 'emissive', '#f59e0b');
-            lightbar.setAttribute('material', 'emissiveIntensity', '0.8');
-          }
+          lightbar.setAttribute('material', 'color', '#f59e0b');
+          lightbar.setAttribute('material', 'emissive', '#f59e0b');
+          lightbar.setAttribute('material', 'emissiveIntensity', '0.8');
         } else if (this.status === 'CAUTION') {
-          if (bannerBg) bannerBg.setAttribute('material', 'color', '#ca8a04');
-          if (bannerTitle) bannerTitle.setAttribute('value', '⚡ CAUTION: ' + this.activeAlert.title);
-          if (bannerSub) bannerSub.setAttribute('value', 'LOCATION: SEAT ' + this.activeAlert.seat + ' | APERTURE LIMIT');
-          if (dispLocation) dispLocation.setAttribute('value', 'WINDOW OPEN OVER LIMIT (SEAT ' + this.activeAlert.seat + ')');
-          if (dispDetail) dispDetail.setAttribute('value', this.activeAlert.description);
-          if (lightbar) {
-            lightbar.setAttribute('material', 'color', '#eab308');
-            lightbar.setAttribute('material', 'emissive', '#eab308');
-            lightbar.setAttribute('material', 'emissiveIntensity', '0.6');
-          }
+          lightbar.setAttribute('material', 'color', '#eab308');
+          lightbar.setAttribute('material', 'emissive', '#eab308');
+          lightbar.setAttribute('material', 'emissiveIntensity', '0.6');
         } else {
-          // NORMAL
-          if (bannerBg) bannerBg.setAttribute('material', 'color', '#059669');
-          if (bannerTitle) bannerTitle.setAttribute('value', '✓ ALL SYSTEMS SECURE');
-          if (bannerSub) bannerSub.setAttribute('value', 'All 8 Windows Within Safe Limits (<=10cm)');
-          if (dispLocation) dispLocation.setAttribute('value', 'MONITORED ZONE: CABIN SEATS 1A-4B');
-          if (dispDetail) dispDetail.setAttribute('value', 'Perimeter IR tripwire grids active. Cruising normal.');
-          if (lightbar) {
-            lightbar.setAttribute('material', 'color', '#10b981');
-            lightbar.setAttribute('material', 'emissive', '#10b981');
-            lightbar.setAttribute('material', 'emissiveIntensity', '0.3');
-          }
+          lightbar.setAttribute('material', 'color', '#10b981');
+          lightbar.setAttribute('material', 'emissive', '#10b981');
+          lightbar.setAttribute('material', 'emissiveIntensity', '0.4');
         }
-
-        // Update 3D Seat status badges
-        ['1A', '2A', '3A', '4A', '1B', '2B', '3B', '4B'].forEach(id => {
-          const badge = document.getElementById('badge-seat-' + id);
-          if (badge) {
-            if (this.activeAlert.seat === id && this.status !== 'NORMAL') {
-              badge.setAttribute('material', 'color', '#ef4444');
-            } else {
-              badge.setAttribute('material', 'color', '#1e293b');
-            }
-          }
-        });
       }
 
       teleportTo(dest) {
@@ -2083,7 +2037,6 @@
             rig.setAttribute('rotation', '0 0 0');
             break;
           case 'leo':
-            // Teleport right next to Leo's seat at 2A facing him!
             rig.setAttribute('position', '-0.3 0.1 -0.5');
             rig.setAttribute('rotation', '0 -90 0');
             break;
@@ -2099,6 +2052,10 @@
         this.playBeep(700, 0.05);
       }
 
+      // ============================================================
+      // 2D CANVAS DASHBOARD RENDERER ("OLD BOARD")
+      // Clean, professional, high-resolution digital terminal
+      // ============================================================
       startDashboardLoop() {
         const render = () => {
           try {
@@ -2122,9 +2079,11 @@
         const w = this.canvas.width;
         const h = this.canvas.height;
 
+        // Background
         ctx.fillStyle = '#0a0f1d';
         ctx.fillRect(0, 0, w, h);
 
+        // Top Bar
         ctx.fillStyle = '#0f172a';
         ctx.fillRect(0, 0, w, 56);
         ctx.strokeStyle = 'rgba(255,255,255,0.1)';
@@ -2136,12 +2095,13 @@
 
         ctx.fillStyle = '#f59e0b';
         ctx.font = 'bold 20px "Segoe UI", sans-serif';
-        ctx.fillText('WINDOWWISE', 24, 36);
+        ctx.fillText('WINDOWWISE™', 24, 36);
 
         ctx.fillStyle = '#94a3b8';
         ctx.font = '13px "Segoe UI", sans-serif';
         ctx.fillText('PASSENGER PERIMETER SAFETY TERMINAL', 180, 35);
 
+        // System Status Pill (Top Right)
         let pillColor = '#10b981';
         let pillText = 'MONITORING: ALL CLEAR';
         if (this.status === 'CAUTION') { pillColor = '#eab308'; pillText = 'CAUTION: APERTURE'; }
@@ -2157,6 +2117,7 @@
         ctx.font = 'bold 12px "Segoe UI", sans-serif';
         ctx.fillText(pillText, w - 275, 33);
 
+        // --- LEFT COLUMN: BUS SEAT & WINDOW MATRIX MAP ---
         ctx.fillStyle = '#111827';
         ctx.beginPath();
         ctx.roundRect(24, 72, 320, 310, 12);
@@ -2186,12 +2147,14 @@
           this.drawSeatNode(ctx, row.r, 205, row.y);
         });
 
+        // --- CENTER COLUMN: ACTIVE INCIDENT TELEMETRY CARD ---
         ctx.fillStyle = '#111827';
         ctx.beginPath();
         ctx.roundRect(360, 72, 640, 185, 12);
         ctx.fill();
         ctx.stroke();
 
+        // Alert Header
         ctx.fillStyle = pillColor;
         ctx.font = 'bold 18px "Segoe UI", sans-serif';
         ctx.fillText(this.activeAlert.title, 380, 108);
@@ -2200,6 +2163,7 @@
         ctx.font = '13px "Segoe UI", sans-serif';
         ctx.fillText(`TARGET LOCATION: SEAT ${this.activeAlert.seat}   |   INCIDENT TYPE: ${this.activeAlert.type}`, 380, 134);
 
+        // Description box
         ctx.fillStyle = 'rgba(255,255,255,0.04)';
         ctx.beginPath();
         ctx.roundRect(380, 148, 600, 52, 6);
@@ -2209,12 +2173,14 @@
         ctx.font = '14px "Segoe UI", sans-serif';
         ctx.fillText(this.activeAlert.description, 396, 178);
 
+        // Telemetry metrics
         ctx.fillStyle = '#38bdf8';
         ctx.font = 'bold 12px "Segoe UI", sans-serif';
         ctx.fillText(`VEHICLE SPEED: ${Math.round(this.speed)} KM/H`, 380, 232);
         ctx.fillText(`SEVERITY: ${this.activeAlert.severity}`, 580, 232);
         ctx.fillText(`TIME: ${this.activeAlert.time}`, 780, 232);
 
+        // --- LOWER-RIGHT COLUMN: INCIDENT HISTORY LOG ---
         ctx.fillStyle = '#111827';
         ctx.beginPath();
         ctx.roundRect(360, 272, 640, 110, 12);
@@ -2238,6 +2204,14 @@
           ctx.fillText(`[${log.time}] (${log.seat}) ${log.event}`, 380, logY);
           logY += 22;
         });
+
+        // --- BOTTOM BAR: DRIVER ACTIONS GUIDE ---
+        ctx.fillStyle = 'rgba(15, 23, 42, 0.9)';
+        ctx.fillRect(0, 400, w, 240);
+
+        ctx.fillStyle = '#64748b';
+        ctx.font = 'bold 12px "Segoe UI", sans-serif';
+        ctx.fillText('DIRECT DRIVER RESPONSE CONTROLS (POINT CONTROLLER RAY OR CLICK BUTTONS BELOW DISPLAY):', 40, 425);
       }
 
       drawSeatNode(ctx, seatId, x, y) {
@@ -2262,6 +2236,7 @@
         ctx.fillText(isHazard ? '⚠️ HAZARD' : '✓ SECURE', x + 10, y + 34);
       }
 
+      // SCENERY ANIMATION
       startSceneryLoop() {
         let lastTime = performance.now();
 
@@ -2278,8 +2253,6 @@
 
           const speedLabel = document.getElementById('speed-label');
           if (speedLabel) speedLabel.textContent = `SPEED: ${Math.round(this.speed)} KM/H`;
-          const dispSpeed = document.getElementById('disp-speed');
-          if (dispSpeed) dispSpeed.setAttribute('value', `SPEED: ${Math.round(this.speed)} KM/H`);
 
           const moveDelta = (this.speed / 3.6) * dt;
           const dashes = document.querySelectorAll('.road-dash');
