@@ -1,1864 +1,2046 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
-    <title>WindowWise — Smart Bus Window Safety System (VR Prototype)</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+  <title>WindowWise - Smart Bus Window Safety System (VR Prototype)</title>
+  
+  <!-- A-Frame 1.6.0 Library -->
+  <script src="https://aframe.io/releases/1.6.0/aframe.min.js"></script>
 
-    <!-- A-Frame 1.6.0 Library -->
-    <script src="https://aframe.io/releases/1.6.0/aframe.min.js"></script>
+  <style>
+    /* Global styling and reset */
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    body {
+      font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, Helvetica, Arial, sans-serif;
+      background: #090d16;
+      color: #e6edf3;
+      overflow: hidden;
+      width: 100vw;
+      height: 100vh;
+    }
 
-    <style>
-        /* Global styling and reset */
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            user-select: none;
-            -webkit-user-select: none;
-        }
+    /* 2D Overlay HUD & Desktop Controls (Clean Glassmorphism) */
+    #desktop-hud {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 100;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 14px;
+      transition: opacity 0.3s;
+    }
 
-        body {
-            font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, Helvetica, Arial, sans-serif;
-            background: #0d1117;
-            color: #e6edf3;
-            overflow: hidden;
-            width: 100vw;
-            height: 100vh;
-        }
+    /* Top Navigation / Status Header */
+    .hud-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: rgba(13, 17, 23, 0.88);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 12px;
+      padding: 10px 18px;
+      pointer-events: auto;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+    }
+    .brand-group {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .logo-badge {
+      background: linear-gradient(135deg, #f59e0b, #d97706);
+      color: #000;
+      font-weight: 900;
+      font-size: 13px;
+      padding: 4px 8px;
+      border-radius: 6px;
+      letter-spacing: 0.5px;
+    }
+    .title-group h1 {
+      font-size: 16px;
+      font-weight: 700;
+      color: #ffffff;
+    }
+    .title-group p {
+      font-size: 11px;
+      color: #94a3b8;
+    }
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .status-capsule {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(15, 23, 42, 0.7);
+      padding: 6px 12px;
+      border-radius: 20px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      font-size: 12px;
+      font-weight: 600;
+    }
+    .status-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: #10b981;
+      box-shadow: 0 0 10px #10b981;
+      animation: pulse-dot 2s infinite;
+    }
+    .status-dot.warning {
+      background: #f59e0b;
+      box-shadow: 0 0 10px #f59e0b;
+    }
+    .status-dot.critical {
+      background: #ef4444;
+      box-shadow: 0 0 12px #ef4444;
+      animation: pulse-fast 0.6s infinite;
+    }
+    .vr-enter-btn-header {
+      background: linear-gradient(135deg, #0284c7, #2563eb);
+      color: #fff;
+      border: 1px solid #38bdf8;
+      padding: 6px 14px;
+      border-radius: 8px;
+      font-weight: 700;
+      font-size: 12px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s;
+    }
+    .vr-enter-btn-header:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 14px rgba(56, 189, 248, 0.4);
+    }
 
-        /* 2D Overlay HUD & Desktop Controls (Clean Glassmorphism) */
-        #desktop-hud {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            pointer-events: none;
-            z-index: 1000;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-            padding: 16px;
-        }
+    @keyframes pulse-dot {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.5; transform: scale(0.9); }
+    }
+    @keyframes pulse-fast {
+      0%, 100% { opacity: 1; transform: scale(1.15); }
+      50% { opacity: 0.4; transform: scale(0.85); }
+    }
 
-        /* Top Navigation / Status Header */
-        .hud-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            background: rgba(13, 17, 23, 0.85);
-            backdrop-filter: blur(12px);
-            border: 1px solid rgba(255, 255, 255, 0.12);
-            border-radius: 12px;
-            padding: 12px 20px;
-            pointer-events: auto;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
-        }
+    /* Scenario Bar (Bottom Center) */
+    .hud-scenarios {
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+      pointer-events: auto;
+      margin-bottom: 6px;
+      flex-wrap: wrap;
+    }
+    .scenario-btn {
+      background: rgba(15, 23, 42, 0.92);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      color: #f1f5f9;
+      padding: 8px 14px;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .scenario-btn:hover {
+      background: rgba(30, 41, 59, 0.95);
+      border-color: #38bdf8;
+      transform: translateY(-2px);
+    }
+    .scenario-btn.active {
+      background: linear-gradient(135deg, #0284c7, #0369a1);
+      border-color: #38bdf8;
+      box-shadow: 0 0 14px rgba(56, 189, 248, 0.4);
+    }
+    .scenario-btn .badge {
+      background: rgba(0, 0, 0, 0.4);
+      padding: 2px 5px;
+      border-radius: 4px;
+      font-size: 10px;
+      color: #38bdf8;
+    }
 
-        .brand-group {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
+    /* Viewpoint Switcher & Controls Guide (Top Right / Bottom Left) */
+    .hud-sidebar {
+      position: absolute;
+      right: 14px;
+      top: 75px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      pointer-events: auto;
+      z-index: 100;
+    }
+    .hud-control-btn {
+      background: rgba(15, 23, 42, 0.88);
+      backdrop-filter: blur(8px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      color: #94a3b8;
+      padding: 7px 11px;
+      border-radius: 8px;
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s;
+    }
+    .hud-control-btn:hover, .hud-control-btn.active {
+      color: #38bdf8;
+      border-color: #38bdf8;
+      background: rgba(30, 41, 59, 0.9);
+    }
 
-        .logo-badge {
-            background: linear-gradient(135deg, #f59e0b, #d97706);
-            color: #000;
-            font-weight: 900;
-            font-size: 14px;
-            padding: 4px 10px;
-            border-radius: 6px;
-            letter-spacing: 0.5px;
-        }
+    .hud-hints {
+      position: absolute;
+      left: 14px;
+      bottom: 20px;
+      background: rgba(15, 23, 42, 0.85);
+      backdrop-filter: blur(8px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      padding: 8px 12px;
+      border-radius: 8px;
+      font-size: 11px;
+      color: #94a3b8;
+      line-height: 1.4;
+      pointer-events: none;
+      max-width: 300px;
+    }
+    .hud-hints kbd {
+      background: #334155;
+      color: #f8fafc;
+      padding: 1px 4px;
+      border-radius: 3px;
+      font-size: 10px;
+    }
 
-        .title-group h1 {
-            font-size: 18px;
-            font-weight: 700;
-            color: #ffffff;
-            letter-spacing: -0.2px;
-        }
+    /* Welcome / Modal Overlay */
+    #welcome-modal {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.85);
+      backdrop-filter: blur(14px);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 500;
+      transition: opacity 0.3s ease;
+    }
+    #welcome-modal.hidden {
+      display: none !important;
+    }
+    .modal-card {
+      background: #111827;
+      border: 1px solid #374151;
+      border-radius: 16px;
+      padding: 28px;
+      max-width: 560px;
+      width: 90%;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
+      text-align: left;
+    }
+    .modal-card h2 {
+      font-size: 22px;
+      color: #f59e0b;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .modal-card p {
+      font-size: 13px;
+      color: #9ca3af;
+      margin-bottom: 14px;
+      line-height: 1.5;
+    }
+    .modal-card .notice-box {
+      background: rgba(245, 158, 11, 0.1);
+      border-left: 4px solid #f59e0b;
+      padding: 10px 14px;
+      border-radius: 6px;
+      font-size: 11px;
+      color: #fbbf24;
+      margin-bottom: 16px;
+    }
+    .features-list {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+    .feature-item {
+      background: #1f2937;
+      border: 1px solid #374151;
+      padding: 8px 12px;
+      border-radius: 8px;
+      font-size: 11px;
+      color: #e5e7eb;
+    }
+    .feature-item strong {
+      color: #38bdf8;
+      display: block;
+      margin-bottom: 2px;
+    }
+    .button-group-modal {
+      display: flex;
+      gap: 10px;
+    }
+    .start-btn-vr {
+      flex: 1.2;
+      background: linear-gradient(135deg, #0284c7, #2563eb);
+      color: #ffffff;
+      font-weight: 700;
+      font-size: 14px;
+      border: 1px solid #38bdf8;
+      padding: 12px;
+      border-radius: 8px;
+      cursor: pointer;
+      box-shadow: 0 4px 15px rgba(2, 132, 199, 0.4);
+    }
+    .start-btn-desktop {
+      flex: 1;
+      background: #1f2937;
+      color: #f3f4f6;
+      font-weight: 600;
+      font-size: 13px;
+      border: 1px solid #4b5563;
+      padding: 12px;
+      border-radius: 8px;
+      cursor: pointer;
+    }
 
-        .title-group p {
-            font-size: 11px;
-            color: #94a3b8;
-        }
+    /* Outcome Notification Toast */
+    #outcome-toast {
+      position: absolute;
+      top: 75px;
+      left: 50%;
+      transform: translateX(-50%) translateY(-30px);
+      background: rgba(16, 185, 129, 0.95);
+      color: #ffffff;
+      padding: 10px 20px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+      opacity: 0;
+      pointer-events: none;
+      transition: all 0.3s ease;
+      z-index: 150;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    #outcome-toast.visible {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
 
-        .status-capsule {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            background: rgba(15, 23, 42, 0.7);
-            padding: 6px 14px;
-            border-radius: 20px;
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            font-size: 12px;
-            font-weight: 600;
-        }
+    /* VR Mode UI override to ensure A-Frame button is always on top */
+    .a-enter-vr {
+      z-index: 300 !important;
+      bottom: 20px !important;
+      right: 20px !important;
+    }
+  </style>
 
-        .status-dot {
-            width: 10px;
-            height: 10px;
-            border-radius: 50%;
-            background: #10b981;
-            box-shadow: 0 0 10px #10b981;
-            animation: pulse-dot 2s infinite;
-        }
+  <!-- Custom A-Frame Components for Meta Quest 3S: Locomotion & Interactive Ray Clicks -->
+  <script>
+    // 1. Meta Quest 3S Thumbstick Locomotion & Snap Turn Component
+    AFRAME.registerComponent('quest-locomotion', {
+      schema: {
+        speed: { type: 'number', default: 2.2 },
+        turnAngle: { type: 'number', default: 30 }
+      },
+      init: function () {
+        this.rig = this.el;
+        this.camera = document.getElementById('camera');
+        this.leftAxis = [0, 0];
+        this.canSnapTurn = true;
 
-        .status-dot.warning {
-            background: #f59e0b;
-            box-shadow: 0 0 10px #f59e0b;
-        }
-
-        .status-dot.critical {
-            background: #ef4444;
-            box-shadow: 0 0 12px #ef4444;
-            animation: pulse-fast 0.6s infinite;
-        }
-
-        @keyframes pulse-dot {
-
-            0%,
-            100% {
-                opacity: 1;
-                transform: scale(1);
+        // Left Controller: Locomotion (move forward/backward/strafe)
+        const leftEl = document.getElementById('left-controller');
+        if (leftEl) {
+          leftEl.addEventListener('axismove', (evt) => {
+            const axis = evt.detail.axis;
+            if (axis && axis.length >= 2) {
+              const x = axis[0] !== undefined ? axis[0] : (axis[2] || 0);
+              const y = axis[1] !== undefined ? axis[1] : (axis[3] || 0);
+              this.leftAxis = [x, y];
             }
+          });
+          leftEl.addEventListener('thumbstickmoved', (evt) => {
+            if (evt.detail) this.leftAxis = [evt.detail.x, evt.detail.y];
+          });
+        }
 
-            50% {
-                opacity: 0.5;
-                transform: scale(0.9);
+        // Right Controller: Snap Turn
+        const rightEl = document.getElementById('right-controller');
+        if (rightEl) {
+          rightEl.addEventListener('axismove', (evt) => {
+            const axis = evt.detail.axis;
+            if (axis && axis.length >= 2) {
+              const x = axis[0] !== undefined ? axis[0] : (axis[2] || 0);
+              if (Math.abs(x) > 0.55 && this.canSnapTurn) {
+                this.canSnapTurn = false;
+                const turn = x > 0 ? -this.data.turnAngle : this.data.turnAngle;
+                const rot = this.rig.getAttribute('rotation');
+                this.rig.setAttribute('rotation', { x: rot.x, y: rot.y + turn, z: rot.z });
+                setTimeout(() => { this.canSnapTurn = true; }, 320);
+              }
             }
-        }
-
-        @keyframes pulse-fast {
-
-            0%,
-            100% {
-                opacity: 1;
-                transform: scale(1.15);
+          });
+          rightEl.addEventListener('thumbstickmoved', (evt) => {
+            if (evt.detail && Math.abs(evt.detail.x) > 0.55 && this.canSnapTurn) {
+              this.canSnapTurn = false;
+              const turn = evt.detail.x > 0 ? -this.data.turnAngle : this.data.turnAngle;
+              const rot = this.rig.getAttribute('rotation');
+              this.rig.setAttribute('rotation', { x: rot.x, y: rot.y + turn, z: rot.z });
+              setTimeout(() => { this.canSnapTurn = true; }, 320);
             }
+          });
+        }
+      },
+      tick: function (time, delta) {
+        if (!delta) return;
+        const dt = delta / 1000;
+        const [lx, ly] = this.leftAxis;
 
-            50% {
-                opacity: 0.4;
-                transform: scale(0.85);
+        if (Math.abs(lx) > 0.1 || Math.abs(ly) > 0.1) {
+          const camRot = this.camera ? this.camera.getAttribute('rotation') : { y: 0 };
+          const rigRot = this.rig.getAttribute('rotation') || { y: 0 };
+          const angle = ((camRot.y + rigRot.y) * Math.PI) / 180;
+
+          const forward = -ly;
+          const strafe = lx;
+
+          const dx = (Math.sin(angle) * forward + Math.cos(angle) * strafe) * this.data.speed * dt;
+          const dz = (-Math.cos(angle) * forward + Math.sin(angle) * strafe) * this.data.speed * dt;
+
+          const pos = this.rig.getAttribute('position');
+          // Bound movement within interior school bus cabin
+          const nextX = Math.max(-1.15, Math.min(1.15, pos.x + dx));
+          const nextZ = Math.max(-5.0, Math.min(4.8, pos.z + dz));
+
+          this.rig.setAttribute('position', { x: nextX, y: pos.y, z: nextZ });
+        }
+      }
+    });
+
+    // 2. High-Reliability VR Clickable Component for 3D buttons & controllers
+    AFRAME.registerComponent('vr-clickable', {
+      schema: {
+        action: { type: 'string', default: '' },
+        hoverColor: { type: 'string', default: '#38bdf8' }
+      },
+      init: function () {
+        const el = this.el;
+        const action = this.data.action;
+
+        const executeAction = () => {
+          // Visual button compression animation
+          const curPos = el.getAttribute('position');
+          el.setAttribute('position', { x: curPos.x, y: curPos.y, z: curPos.z - 0.015 });
+          setTimeout(() => {
+            el.setAttribute('position', curPos);
+          }, 120);
+
+          if (window.windowwise) {
+            if (action.startsWith('scenario:')) {
+              window.windowwise.selectScenario(action.replace('scenario:', ''));
+            } else if (action.startsWith('teleport:')) {
+              window.windowwise.teleportTo(action.replace('teleport:', ''));
+            } else {
+              window.windowwise.handleDriverAction(action);
             }
-        }
+          }
+        };
 
-        /* Scenario Bar (Bottom Center) */
-        .hud-scenarios {
-            display: flex;
-            justify-content: center;
-            gap: 10px;
-            pointer-events: auto;
-            margin-bottom: 8px;
-            flex-wrap: wrap;
-        }
+        // Listen for all input events (desktop click, laser click, VR trigger)
+        el.addEventListener('click', executeAction);
+        el.addEventListener('mousedown', executeAction);
+        el.addEventListener('triggerdown', executeAction);
 
-        .scenario-btn {
-            background: rgba(15, 23, 42, 0.9);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.15);
-            color: #f1f5f9;
-            padding: 10px 16px;
-            border-radius: 10px;
-            font-size: 13px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .scenario-btn:hover {
-            background: rgba(30, 41, 59, 0.95);
-            border-color: #38bdf8;
-            transform: translateY(-2px);
-            box-shadow: 0 4px 16px rgba(56, 189, 248, 0.25);
-        }
-
-        .scenario-btn.active {
-            background: linear-gradient(135deg, #0284c7, #0369a1);
-            border-color: #38bdf8;
-            box-shadow: 0 0 16px rgba(56, 189, 248, 0.4);
-        }
-
-        .scenario-btn .badge {
-            background: rgba(0, 0, 0, 0.35);
-            padding: 2px 6px;
-            border-radius: 4px;
-            font-size: 10px;
-            color: #38bdf8;
-        }
-
-        /* Viewpoint Switcher & Controls Guide (Top Right / Bottom Left) */
-        .hud-sidebar {
-            position: absolute;
-            right: 16px;
-            top: 80px;
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-            pointer-events: auto;
-            z-index: 1000;
-        }
-
-        .hud-control-btn {
-            background: rgba(15, 23, 42, 0.85);
-            backdrop-filter: blur(8px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            color: #94a3b8;
-            padding: 8px 12px;
-            border-radius: 8px;
-            font-size: 11px;
-            font-weight: 600;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            transition: all 0.2s;
-        }
-
-        .hud-control-btn:hover,
-        .hud-control-btn.active {
-            color: #38bdf8;
-            border-color: #38bdf8;
-            background: rgba(30, 41, 59, 0.9);
-        }
-
-        .hud-hints {
-            position: absolute;
-            left: 16px;
-            bottom: 24px;
-            background: rgba(15, 23, 42, 0.8);
-            backdrop-filter: blur(8px);
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            padding: 10px 14px;
-            border-radius: 10px;
-            font-size: 11px;
-            color: #94a3b8;
-            line-height: 1.5;
-            pointer-events: auto;
-            max-width: 320px;
-        }
-
-        .hud-hints kbd {
-            background: #334155;
-            color: #f8fafc;
-            padding: 2px 5px;
-            border-radius: 4px;
-            font-size: 10px;
-            font-family: inherit;
-        }
-
-        /* Welcome / Modal Overlay */
-        #welcome-modal {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.85);
-            backdrop-filter: blur(16px);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            z-index: 2000;
-            transition: opacity 0.4s ease;
-        }
-
-        #welcome-modal.hidden {
-            opacity: 0;
-            pointer-events: none;
-        }
-
-        .modal-card {
-            background: #111827;
-            border: 1px solid #374151;
-            border-radius: 16px;
-            padding: 32px;
-            max-width: 580px;
-            width: 90%;
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
-            text-align: left;
-        }
-
-        .modal-card h2 {
-            font-size: 24px;
-            color: #f59e0b;
-            margin-bottom: 8px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .modal-card p {
-            font-size: 14px;
-            color: #9ca3af;
-            margin-bottom: 16px;
-            line-height: 1.6;
-        }
-
-        .modal-card .notice-box {
-            background: rgba(245, 158, 11, 0.1);
-            border-left: 4px solid #f59e0b;
-            padding: 12px 16px;
-            border-radius: 6px;
-            font-size: 12px;
-            color: #fbbf24;
-            margin-bottom: 20px;
-        }
-
-        .features-list {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 12px;
-            margin-bottom: 24px;
-        }
-
-        .feature-item {
-            background: #1f2937;
-            border: 1px solid #374151;
-            padding: 10px 14px;
-            border-radius: 8px;
-            font-size: 12px;
-            color: #e5e7eb;
-        }
-
-        .feature-item strong {
-            color: #38bdf8;
-            display: block;
-            margin-bottom: 2px;
-        }
-
-        .start-btn {
-            width: 100%;
-            background: linear-gradient(135deg, #f59e0b, #d97706);
-            color: #111827;
-            font-weight: 700;
-            font-size: 15px;
-            border: none;
-            padding: 14px;
-            border-radius: 10px;
-            cursor: pointer;
-            transition: transform 0.2s, box-shadow 0.2s;
-        }
-
-        .start-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 20px rgba(245, 158, 11, 0.3);
-        }
-
-        /* Outcome Notification Toast */
-        #outcome-toast {
-            position: absolute;
-            top: 80px;
-            left: 50%;
-            transform: translateX(-50%) translateY(-30px);
-            background: rgba(16, 185, 129, 0.95);
-            color: #ffffff;
-            padding: 12px 24px;
-            border-radius: 10px;
-            font-size: 14px;
-            font-weight: 600;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
-            opacity: 0;
-            pointer-events: none;
-            transition: all 0.3s ease;
-            z-index: 1500;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        #outcome-toast.visible {
-            opacity: 1;
-            transform: translateX(-50%) translateY(0);
-        }
-    </style>
+        // Hover highlight
+        el.addEventListener('mouseenter', () => {
+          el.setAttribute('material', 'emissive', this.data.hoverColor);
+          el.setAttribute('material', 'emissiveIntensity', '0.4');
+        });
+        el.addEventListener('mouseleave', () => {
+          el.setAttribute('material', 'emissive', '#000000');
+          el.setAttribute('material', 'emissiveIntensity', '0.0');
+        });
+      }
+    });
+  </script>
 </head>
 
 <body>
-    <!-- 2D Desktop HUD Layer -->
-    <div id="desktop-hud">
-        <!-- Header -->
-        <div class="hud-header">
-            <div class="brand-group">
-                <span class="logo-badge">WINDOWWISE</span>
-                <div class="title-group">
-                    <h1>Smart Bus Window Safety System</h1>
-                    <p>VR Prototype for Meta Quest 3S & WebXR</p>
-                </div>
-            </div>
-            <div class="status-capsule">
-                <div id="status-light" class="status-dot"></div>
-                <span id="status-label">STATUS: ALL CLEAR</span>
-                <span style="color: #64748b; margin: 0 4px;">|</span>
-                <span id="speed-label" style="color: #38bdf8;">SPEED: 45 KM/H</span>
-            </div>
+  <!-- 2D Desktop HUD Layer -->
+  <div id="desktop-hud">
+    <!-- Header -->
+    <div class="hud-header">
+      <div class="brand-group">
+        <span class="logo-badge">WINDOWWISE</span>
+        <div class="title-group">
+          <h1>Smart Bus Window Safety System</h1>
+          <p>Meta Quest 3S & WebXR Prototype</p>
         </div>
-
-        <!-- Scenarios Navigation -->
-        <div class="hud-scenarios">
-            <button class="scenario-btn active" onclick="windowwise.selectScenario('normal')">
-                <span class="badge">NORMAL</span> Cruising
-            </button>
-            <button class="scenario-btn" onclick="windowwise.selectScenario('scenarioA')">
-                <span class="badge">A</span> Head/Body Leaning
-            </button>
-            <button class="scenario-btn" onclick="windowwise.selectScenario('scenarioB')">
-                <span class="badge">B</span> Hand Outside
-            </button>
-            <button class="scenario-btn" onclick="windowwise.selectScenario('scenarioC')">
-                <span class="badge">C</span> Window Limit Exceeded
-            </button>
-            <button class="scenario-btn" onclick="windowwise.selectScenario('scenarioD')">
-                <span class="badge">D</span> Object Thrown
-            </button>
-            <button class="scenario-btn" style="border-color:#ef4444;" onclick="windowwise.resetScenario()">
-                🔄 Reset
-            </button>
+      </div>
+      <div class="header-actions">
+        <div class="status-capsule">
+          <div id="status-light" class="status-dot"></div>
+          <span id="status-label">STATUS: ALL CLEAR</span>
+          <span style="color: #64748b; margin: 0 4px;">|</span>
+          <span id="speed-label" style="color: #38bdf8;">SPEED: 45 KM/H</span>
         </div>
+        <button class="vr-enter-btn-header" onclick="windowwise.launchVR()">
+          🥽 ENTER VR
+        </button>
+      </div>
     </div>
 
-    <!-- Viewpoint Navigation Sidebar -->
-    <div class="hud-sidebar">
-        <button class="hud-control-btn active" id="btn-view-driver" onclick="windowwise.setViewpoint('driver')">
-            🚗 Driver Seat
-        </button>
-        <button class="hud-control-btn" id="btn-view-front" onclick="windowwise.setViewpoint('front')">
-            👥 Front Aisle
-        </button>
-        <button class="hud-control-btn" id="btn-view-mid" onclick="windowwise.setViewpoint('mid')">
-            🚌 Mid Cabin
-        </button>
-        <button class="hud-control-btn" id="btn-view-outside" onclick="windowwise.setViewpoint('outside')">
-            🔍 Outside View
-        </button>
-        <button class="hud-control-btn" onclick="windowwise.toggleSensorVisuals()">
-            📡 Toggle IR Sensor Mesh
-        </button>
+    <!-- Scenarios Navigation -->
+    <div class="hud-scenarios">
+      <button class="scenario-btn active" onclick="windowwise.selectScenario('normal')">
+        <span class="badge">NORMAL</span> Cruising
+      </button>
+      <button class="scenario-btn" onclick="windowwise.selectScenario('scenarioA')">
+        <span class="badge">A</span> Head/Body Leaning
+      </button>
+      <button class="scenario-btn" onclick="windowwise.selectScenario('scenarioB')">
+        <span class="badge">B</span> Hand Outside
+      </button>
+      <button class="scenario-btn" onclick="windowwise.selectScenario('scenarioC')">
+        <span class="badge">C</span> Window Limit Exceeded
+      </button>
+      <button class="scenario-btn" onclick="windowwise.selectScenario('scenarioD')">
+        <span class="badge">D</span> Object Thrown
+      </button>
+      <button class="scenario-btn" style="border-color:#ef4444;" onclick="windowwise.resetScenario()">
+        🔄 Reset
+      </button>
     </div>
+  </div>
 
-    <!-- Desktop Controls Hint -->
-    <div class="hud-hints">
-        <strong>VR (Meta Quest 3S):</strong><br />
-        • Use Left/Right controller triggers to point & click dashboard buttons.<br />
-        • Move with thumbstick / Teleport pins.<br />
-        <strong>Desktop:</strong><br />
-        • Look: Mouse drag | Move: <kbd>W</kbd> <kbd>A</kbd> <kbd>S</kbd> <kbd>D</kbd><br />
-        • Click directly on 3D Dashboard or Scenario bar above.
-    </div>
+  <!-- Viewpoint Navigation Sidebar -->
+  <div class="hud-sidebar">
+    <button class="hud-control-btn active" id="btn-view-driver" onclick="windowwise.teleportTo('driver')">
+      🚗 Driver Seat
+    </button>
+    <button class="hud-control-btn" id="btn-view-front" onclick="windowwise.teleportTo('front')">
+      👥 Front Aisle
+    </button>
+    <button class="hud-control-btn" id="btn-view-mid" onclick="windowwise.teleportTo('mid')">
+      🚌 Mid Cabin
+    </button>
+    <button class="hud-control-btn" id="btn-view-leo" onclick="windowwise.teleportTo('leo')">
+      🔍 Seat 2A (Leo)
+    </button>
+    <button class="hud-control-btn" onclick="windowwise.toggleSensorVisuals()">
+      📡 Toggle IR Mesh
+    </button>
+  </div>
 
-    <!-- Resolution Toast -->
-    <div id="outcome-toast">
-        <span id="toast-icon">🛡️</span>
-        <span id="toast-text">Warning acknowledged. System secured.</span>
-    </div>
+  <!-- Desktop Controls Hint -->
+  <div class="hud-hints">
+    <strong>Meta Quest 3S:</strong><br/>
+    • <b>Left Thumbstick:</b> Walk / Move through bus<br/>
+    • <b>Right Thumbstick:</b> Snap Turn (30°)<br/>
+    • <b>Trigger / Ray:</b> Point and click any 3D button<br/>
+    <strong>Desktop:</strong> Mouse Look | <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> Move
+  </div>
 
-    <!-- Welcome / Intro Modal -->
-    <div id="welcome-modal">
-        <div class="modal-card">
-            <h2>🚌 WindowWise VR Prototype</h2>
-            <p>
-                WindowWise is an intelligent passenger-safety demonstration system engineered to eliminate bus window
-                accidents. Through simulated smart perimeter sensors, it monitors passenger postures, aperture limits,
-                and foreign object deployment in real-time, giving the driver immediate preventive command.
-            </p>
+  <!-- Resolution Toast -->
+  <div id="outcome-toast">
+    <span id="toast-icon">🛡️</span>
+    <span id="toast-text">Warning acknowledged. System secured.</span>
+  </div>
 
-            <div class="notice-box">
-                <strong>⚠️ Simulation Notice:</strong> This is an interactive VR demonstration prototype. Simulated
-                sensor detection and response algorithms demonstrate the proposed hardware architecture.
-            </div>
+  <!-- Welcome / Intro Modal -->
+  <div id="welcome-modal">
+    <div class="modal-card">
+      <h2>🚌 WindowWise VR Prototype</h2>
+      <p>
+        WindowWise is a passenger-safety simulation system designed for school buses. Simulated perimeter sensors monitor window postures, aperture limits, and ejected objects in real-time, giving the driver immediate preventative command.
+      </p>
 
-            <div class="features-list">
-                <div class="feature-item">
-                    <strong>Perimeter IR Sensor Grids</strong>
-                    Live spatial boundary tripwires monitoring each window aperture.
-                </div>
-                <div class="feature-item">
-                    <strong>Smart Driver Terminal</strong>
-                    Immediate visual telemetry, audio warning, and single-tap interventions.
-                </div>
-                <div class="feature-item">
-                    <strong>Meta Quest 3S Ready</strong>
-                    Full dual 6DoF Touch controller rays, haptics, and spatial ergonomics.
-                </div>
-                <div class="feature-item">
-                    <strong>Active Hazard Preemption</strong>
-                    Simulated PA announcements, auto-slowdown, and cabin attendant alerts.
-                </div>
-            </div>
+      <div class="notice-box">
+        <strong>⚠️ Simulation Notice:</strong> This is an interactive VR demonstration prototype. Simulated sensor detection algorithms demonstrate the proposed hardware architecture.
+      </div>
 
-            <button class="start-btn" onclick="windowwise.startExperience()">
-                ENTER WINDOWWISE SIMULATION
-            </button>
+      <div class="features-list">
+        <div class="feature-item">
+          <strong>Dual 6DoF Controllers</strong>
+          Full laser pointer triggers on 3D driver buttons.
         </div>
+        <div class="feature-item">
+          <strong>Thumbstick Movement</strong>
+          Walk freely through the school bus aisle.
+        </div>
+        <div class="feature-item">
+          <strong>Live 3D Terminal</strong>
+          Spatial dashboard with seat matrix & telemetry.
+        </div>
+        <div class="feature-item">
+          <strong>In-VR Scenario Box</strong>
+          Trigger scenarios directly inside VR headset.
+        </div>
+      </div>
+
+      <div class="button-group-modal">
+        <button class="start-btn-vr" onclick="windowwise.launchVR()">
+          🥽 ENTER VR (META QUEST 3S)
+        </button>
+        <button class="start-btn-desktop" onclick="windowwise.startDesktop()">
+          🖥️ EXPLORE IN DESKTOP
+        </button>
+      </div>
     </div>
+  </div>
 
-    <!-- A-FRAME 3D SCENE -->
-    <a-scene renderer="antialias: true; colorManagement: true; physicallyCorrectLights: true; highRefreshRate: true;"
-        background="color: #87CEEB" fog="type: exponential; color: #b8e2f2; density: 0.008;" cursor="rayOrigin: mouse"
-        raycaster="objects: .clickable">
-        <!-- Asset Preloader (Procedural & Canvas Textures) -->
-        <a-assets>
-            <canvas id="dashboard-canvas" width="1024" height="640"></canvas>
-        </a-assets>
+  <!-- ============================================================
+       A-FRAME 3D SCENE
+       ============================================================ -->
+  <a-scene
+    vr-mode-ui="enabled: true"
+    renderer="antialias: true; colorManagement: true; physicallyCorrectLights: true; highRefreshRate: true;"
+    background="color: #87CEEB"
+    fog="type: exponential; color: #b8e2f2; density: 0.008;"
+    cursor="rayOrigin: mouse"
+    raycaster="objects: .clickable"
+  >
+    <!-- Asset Preloader (Procedural Canvas Textures) -->
+    <a-assets>
+      <canvas id="dashboard-canvas" width="1024" height="640"></canvas>
+    </a-assets>
 
-        <!-- LIGHTING -->
-        <a-entity light="type: ambient; color: #f8fafc; intensity: 0.75;"></a-entity>
-        <a-entity
-            light="type: directional; color: #fffbeb; intensity: 1.2; position: 10 20 15; castShadow: false;"></a-entity>
-        <a-entity light="type: point; color: #fef08a; intensity: 0.5; position: 0 2 0; distance: 15;"></a-entity>
-
-        <!-- RIG & VR CONTROLLERS (Meta Quest 3S & Desktop) -->
-        <a-entity id="rig" position="-0.75 0.1 3.5" rotation="0 0 0">
-            <a-camera id="camera" position="0 1.25 0" look-controls="pointerLockEnabled: false"
-                wasd-controls="acceleration: 15">
-                <!-- Center reticle for precision interaction if mouse is trapped -->
-                <a-entity cursor="fuse: false;" position="0 0 -1"
-                    geometry="primitive: ring; radiusInner: 0.008; radiusOuter: 0.013"
-                    material="color: #38bdf8; shader: flat; opacity: 0.7; transparent: true"
-                    raycaster="objects: .clickable" visible="false"></a-entity>
-            </a-camera>
-
-            <!-- Meta Quest 3S Left Hand Controller -->
-            <a-entity id="left-controller" laser-controls="hand: left"
-                raycaster="objects: .clickable; far: 8; lineColor: #38bdf8; lineOpacity: 0.8" haptics>
-                <a-sphere radius="0.015" color="#38bdf8" material="shader: flat"></a-sphere>
-            </a-entity>
-
-            <!-- Meta Quest 3S Right Hand Controller -->
-            <a-entity id="right-controller" laser-controls="hand: right"
-                raycaster="objects: .clickable; far: 8; lineColor: #f59e0b; lineOpacity: 0.8" haptics>
-                <a-sphere radius="0.015" color="#f59e0b" material="shader: flat"></a-sphere>
-            </a-entity>
-        </a-entity>
-
-        <!-- ============================================================
-         THE BUS ENVIRONMENT (PROCEDURAL GEOMETRY)
-         ============================================================ -->
-        <a-entity id="school-bus" position="0 0 0">
-
-            <!-- Floor / Aisle -->
-            <a-box position="0 0.2 0" width="2.7" height="0.1" depth="11"
-                material="color: #1e293b; roughness: 0.8"></a-box>
-            <!-- Center Aisle Non-Slip Mat with Safety Lines -->
-            <a-plane position="0 0.255 0" rotation="-90 0 0" width="0.8" height="10.5"
-                material="color: #0f172a; roughness: 0.9"></a-plane>
-            <a-plane position="-0.4 0.256 0" rotation="-90 0 0" width="0.04" height="10.5"
-                material="color: #facc15; roughness: 0.5"></a-plane>
-            <a-plane position="0.4 0.256 0" rotation="-90 0 0" width="0.04" height="10.5"
-                material="color: #facc15; roughness: 0.5"></a-plane>
-
-            <!-- Ceiling -->
-            <a-box position="0 2.45 0" width="2.7" height="0.1" depth="11"
-                material="color: #f1f5f9; roughness: 0.5"></a-box>
-            <!-- Roof Emergency Exit Hatches -->
-            <a-box position="0 2.5 1.5" width="0.9" height="0.12" depth="0.9"
-                material="color: #dc2626; roughness: 0.4"></a-box>
-            <a-box position="0 2.5 -2.5" width="0.9" height="0.12" depth="0.9"
-                material="color: #dc2626; roughness: 0.4"></a-box>
-
-            <!-- Overhead LED Strip Lights -->
-            <a-plane position="-0.5 2.39 0" rotation="90 0 0" width="0.08" height="9"
-                material="color: #ffffff; emissive: #ffffff; emissiveIntensity: 0.8; shader: flat"></a-plane>
-            <a-plane position="0.5 2.39 0" rotation="90 0 0" width="0.08" height="9"
-                material="color: #ffffff; emissive: #ffffff; emissiveIntensity: 0.8; shader: flat"></a-plane>
-
-            <!-- Front Wall & Windshield Pillar -->
-            <a-box position="0 1.3 5.45" width="2.7" height="2.2" depth="0.1"
-                material="color: #eab308; roughness: 0.4"></a-box>
-            <!-- Front Windshield Glass -->
-            <a-plane position="0 1.6 5.4" rotation="0 180 0" width="2.4" height="1.1"
-                material="color: #bae6fd; opacity: 0.25; transparent: true; roughness: 0.1"></a-plane>
-            <!-- Rear Wall with Emergency Exit Door -->
-            <a-box position="0 1.3 -5.45" width="2.7" height="2.2" depth="0.1"
-                material="color: #eab308; roughness: 0.4"></a-box>
-            <a-box position="0 1.15 -5.39" width="0.9" height="1.8" depth="0.02"
-                material="color: #ca8a04; roughness: 0.5"></a-box>
-            <a-box position="0 1.7 -5.38" width="0.6" height="0.5" depth="0.02"
-                material="color: #93c5fd; opacity: 0.35; transparent: true"></a-box>
-
-            <!-- Side Lower Walls (Bus Yellow exterior / interior trim) -->
-            <a-box position="-1.35 0.7 0" width="0.08" height="0.9" depth="11"
-                material="color: #eab308; roughness: 0.4"></a-box>
-            <a-box position="1.35 0.7 0" width="0.08" height="0.9" depth="11"
-                material="color: #eab308; roughness: 0.4"></a-box>
-            <!-- Upper Roof Edges -->
-            <a-box position="-1.35 2.25 0" width="0.08" height="0.3" depth="11"
-                material="color: #ca8a04; roughness: 0.4"></a-box>
-            <a-box position="1.35 2.25 0" width="0.08" height="0.3" depth="11"
-                material="color: #ca8a04; roughness: 0.4"></a-box>
-
-            <!-- Yellow Stanchion Grab Poles & Ceiling Rails -->
-            <a-cylinder position="-0.4 1.3 0" radius="0.02" height="2.2"
-                material="color: #facc15; metalness: 0.6; roughness: 0.3"></a-cylinder>
-            <a-cylinder position="0.4 1.3 0" radius="0.02" height="2.2"
-                material="color: #facc15; metalness: 0.6; roughness: 0.3"></a-cylinder>
-            <a-cylinder position="-0.4 2.15 0" rotation="90 0 0" radius="0.02" height="10"
-                material="color: #facc15; metalness: 0.6; roughness: 0.3"></a-cylinder>
-            <a-cylinder position="0.4 2.15 0" rotation="90 0 0" radius="0.02" height="10"
-                material="color: #facc15; metalness: 0.6; roughness: 0.3"></a-cylinder>
-
-            <!-- Driver Area (Front Left) -->
-            <a-entity id="driver-station" position="-0.75 0 4.2">
-                <!-- Driver Seat Base & Cushion -->
-                <a-box position="0 0.45 -0.5" width="0.55" height="0.4" depth="0.55"
-                    material="color: #1e293b; roughness: 0.8"></a-box>
-                <a-box position="0 0.95 -0.73" width="0.55" height="0.7" depth="0.12"
-                    material="color: #0f172a; roughness: 0.7"></a-box>
-                <a-cylinder position="0 0.25 -0.5" radius="0.05" height="0.4"
-                    material="color: #475569; metalness: 0.8"></a-cylinder>
-
-                <!-- Driver Steering Console & Binnacle -->
-                <a-box position="0 0.85 0.5" rotation="-20 0 0" width="0.75" height="0.4" depth="0.55"
-                    material="color: #1e293b; roughness: 0.5"></a-box>
-                <!-- Steering Column & Wheel -->
-                <a-cylinder position="0 0.95 0.45" rotation="-50 0 0" radius="0.03" height="0.4"
-                    material="color: #334155; metalness: 0.5"></a-cylinder>
-                <a-torus position="0 1.1 0.32" rotation="40 0 0" radius="0.22" radius-tubular="0.018"
-                    material="color: #020617; roughness: 0.3"></a-torus>
-                <!-- Dashboard Speedometer cluster -->
-                <a-plane position="0 0.98 0.49" rotation="-45 0 0" width="0.35" height="0.12"
-                    material="color: #0284c7; emissive: #0284c7; emissiveIntensity: 0.6; shader: flat"></a-plane>
-
-                <!-- Interior Rear-view Convex Mirror (Shows cabin reflection) -->
-                <a-box position="0.5 2.1 0.7" rotation="10 190 0" width="0.55" height="0.2" depth="0.02"
-                    material="color: #e2e8f0; metalness: 0.9; roughness: 0.1"></a-box>
-                <a-cylinder position="0.5 2.25 0.7" radius="0.015" height="0.2" material="color: #475569"></a-cylinder>
-            </a-entity>
-
-            <!-- ============================================================
-           WINDOWWISE DRIVER MONITORING DASHBOARD (3D INTERACTIVE)
-           Positioned conveniently to the driver's front-right
-           ============================================================ -->
-            <a-entity id="windowwise-terminal" position="-0.15 1.15 4.55" rotation="-12 -25 0">
-                <!-- Terminal Outer Bezel / Housing -->
-                <a-box position="0 0 0" width="0.82" height="0.52" depth="0.04"
-                    material="color: #090d16; roughness: 0.4; metalness: 0.6"></a-box>
-                <a-cylinder position="0 -0.28 -0.05" rotation="15 0 0" radius="0.025" height="0.35"
-                    material="color: #334155; metalness: 0.8"></a-cylinder>
-
-                <!-- Live Dashboard Display Canvas Screen -->
-                <a-plane id="dashboard-screen" position="0 0 0.021" width="0.78" height="0.48"
-                    material="shader: flat; src: #dashboard-canvas; transparent: false;"></a-plane>
-
-                <!-- Interactive 3D Driver Action Buttons Overlay (Touch & Laser Clickable in VR) -->
-                <!-- Row 1: Voice Warning & Slow Down -->
-                <a-entity position="0 -0.15 0.035">
-                    <!-- Voice Warning Button -->
-                    <a-box id="btn-voice" class="clickable" position="-0.26 0 0" width="0.22" height="0.065"
-                        depth="0.02" material="color: #0284c7; roughness: 0.3"
-                        event-set__hover="_event: mouseenter; material.color: #38bdf8"
-                        event-set__leave="_event: mouseleave; material.color: #0284c7">
-                        <a-text value="📢 VOICE WARN" align="center" position="0 0 0.012" width="0.9" color="#ffffff"
-                            font="roboto"></a-text>
-                    </a-box>
-
-                    <!-- Slow Down Button -->
-                    <a-box id="btn-slow" class="clickable" position="-0.02 0 0" width="0.2" height="0.065" depth="0.02"
-                        material="color: #d97706; roughness: 0.3"
-                        event-set__hover="_event: mouseenter; material.color: #fbbf24"
-                        event-set__leave="_event: mouseleave; material.color: #d97706">
-                        <a-text value="⚠️ SLOW DOWN" align="center" position="0 0 0.012" width="0.9" color="#ffffff"
-                            font="roboto"></a-text>
-                    </a-box>
-
-                    <!-- Stop Bus Button -->
-                    <a-box id="btn-stop" class="clickable" position="0.22 0 0" width="0.22" height="0.065" depth="0.02"
-                        material="color: #dc2626; roughness: 0.3"
-                        event-set__hover="_event: mouseenter; material.color: #ef4444"
-                        event-set__leave="_event: mouseleave; material.color: #dc2626">
-                        <a-text value="🛑 STOP BUS" align="center" position="0 0 0.012" width="0.9" color="#ffffff"
-                            font="roboto"></a-text>
-                    </a-box>
-                </a-entity>
-
-                <!-- Row 2: Acknowledge & Notify Attendant -->
-                <a-entity position="0 -0.225 0.035">
-                    <!-- Acknowledge Button -->
-                    <a-box id="btn-ack" class="clickable" position="-0.15 0 0" width="0.26" height="0.055" depth="0.02"
-                        material="color: #10b981; roughness: 0.3">
-                        <a-text value="✓ ACKNOWLEDGE" align="center" position="0 0 0.012" width="0.85" color="#ffffff"
-                            font="roboto"></a-text>
-                    </a-box>
-
-                    <!-- Notify Attendant Button -->
-                    <a-box id="btn-notify" class="clickable" position="0.15 0 0" width="0.26" height="0.055"
-                        depth="0.02" material="color: #6366f1; roughness: 0.3">
-                        <a-text value="🔔 NOTIFY ATTENDANT" align="center" position="0 0 0.012" width="0.85"
-                            color="#ffffff" font="roboto"></a-text>
-                    </a-box>
-                </a-entity>
-            </a-entity>
-
-            <!-- ============================================================
-           SEATS AND PASSENGERS (ROWS 1 TO 4, LEFT & RIGHT)
-           ============================================================ -->
-            <a-entity id="passenger-cabin">
-                <!-- Helper function creates seats and children procedurally -->
-
-                <!-- ROW 1 -->
-                <!-- Seat 1A (Left - Window Limit Exceeded Scenario) -->
-                <a-entity id="seat-unit-1A" position="-0.85 0.2 2.0"></a-entity>
-                <!-- Seat 1B (Right) -->
-                <a-entity id="seat-unit-1B" position="0.85 0.2 2.0"></a-entity>
-
-                <!-- ROW 2 -->
-                <!-- Seat 2A (Left - Head/Body Leaning Scenario) -->
-                <a-entity id="seat-unit-2A" position="-0.85 0.2 0.5"></a-entity>
-                <!-- Seat 2B (Right) -->
-                <a-entity id="seat-unit-2B" position="0.85 0.2 0.5"></a-entity>
-
-                <!-- ROW 3 -->
-                <!-- Seat 3A (Left) -->
-                <a-entity id="seat-unit-3A" position="-0.85 0.2 -1.0"></a-entity>
-                <!-- Seat 3B (Right - Hand Protrusion Scenario) -->
-                <a-entity id="seat-unit-3B" position="0.85 0.2 -1.0"></a-entity>
-
-                <!-- ROW 4 -->
-                <!-- Seat 4A (Left - Object Thrown Scenario) -->
-                <a-entity id="seat-unit-4A" position="-0.85 0.2 -2.5"></a-entity>
-                <!-- Seat 4B (Right) -->
-                <a-entity id="seat-unit-4B" position="0.85 0.2 -2.5"></a-entity>
-            </a-entity>
-
-            <!-- ============================================================
-           BUS WINDOWS & SIMULATED SENSOR TRIPWIRE GRIDS
-           ============================================================ -->
-            <a-entity id="windows-group">
-                <!-- Left Side Windows -->
-                <a-entity id="window-frame-1A" position="-1.33 1.55 2.0" rotation="0 0 0"></a-entity>
-                <a-entity id="window-frame-2A" position="-1.33 1.55 0.5" rotation="0 0 0"></a-entity>
-                <a-entity id="window-frame-3A" position="-1.33 1.55 -1.0" rotation="0 0 0"></a-entity>
-                <a-entity id="window-frame-4A" position="-1.33 1.55 -2.5" rotation="0 0 0"></a-entity>
-
-                <!-- Right Side Windows -->
-                <a-entity id="window-frame-1B" position="1.33 1.55 2.0" rotation="0 180 0"></a-entity>
-                <a-entity id="window-frame-2B" position="1.33 1.55 0.5" rotation="0 180 0"></a-entity>
-                <a-entity id="window-frame-3B" position="1.33 1.55 -1.0" rotation="0 180 0"></a-entity>
-                <a-entity id="window-frame-4B" position="1.33 1.55 -2.5" rotation="0 180 0"></a-entity>
-            </a-entity>
-
-            <!-- Animated Thrown Projectile (Scenario D) -->
-            <a-cylinder id="flying-projectile" position="-1.3 1.5 -2.5" radius="0.04" height="0.14"
-                material="color: #ef4444; roughness: 0.3" visible="false"></a-cylinder>
-
-        </a-entity> <!-- /school-bus -->
-
-        <!-- ============================================================
-         OUTSIDE MOVING ENVIRONMENT (ROAD, TREES, GROUND)
-         Simulates bus movement and speed changes
-         ============================================================ -->
-        <a-entity id="scenery-group">
-            <!-- Ground plane / Grass -->
-            <a-plane position="0 -0.05 0" rotation="-90 0 0" width="80" height="150"
-                material="color: #3f6212; roughness: 0.9"></a-plane>
-
-            <!-- Asphalt Road -->
-            <a-plane position="0 0 0" rotation="-90 0 0" width="7" height="150"
-                material="color: #1e293b; roughness: 0.7"></a-plane>
-            <a-plane position="-3.5 0.01 0" rotation="-90 0 0" width="0.2" height="150"
-                material="color: #ffffff; roughness: 0.5"></a-plane>
-            <a-plane position="3.5 0.01 0" rotation="-90 0 0" width="0.2" height="150"
-                material="color: #ffffff; roughness: 0.5"></a-plane>
-
-            <!-- Moving Center Dashed Lines -->
-            <a-entity id="road-lines-container"></a-entity>
-
-            <!-- Roadside Props (Trees, Poles) -->
-            <a-entity id="roadside-props-container"></a-entity>
-        </a-entity>
-
-    </a-scene>
+    <!-- LIGHTING -->
+    <a-entity light="type: ambient; color: #f8fafc; intensity: 0.8;"></a-entity>
+    <a-entity light="type: directional; color: #fffbeb; intensity: 1.3; position: 8 20 -10;"></a-entity>
+    <a-entity light="type: point; color: #fef08a; intensity: 0.6; position: 0 2 -1; distance: 16;"></a-entity>
 
     <!-- ============================================================
+         RIG & CONTROLLERS (META QUEST 3S 6DoF TOUCH & DESKTOP)
+         Spawned in the Driver's Seat facing forward down -Z
+         ============================================================ -->
+    <a-entity
+      id="rig"
+      quest-locomotion="speed: 2.2; turnAngle: 30"
+      position="-0.7 0.1 -3.4"
+      rotation="0 0 0"
+    >
+      <a-camera
+        id="camera"
+        position="0 1.25 0"
+        look-controls="pointerLockEnabled: false"
+        wasd-controls="acceleration: 15"
+      ></a-camera>
+
+      <!-- Meta Quest 3S Left Hand Controller -->
+      <a-entity
+        id="left-controller"
+        laser-controls="hand: left"
+        raycaster="objects: .clickable; far: 10; lineColor: #38bdf8; lineOpacity: 0.85"
+      >
+        <a-sphere radius="0.015" color="#38bdf8" material="shader: flat"></a-sphere>
+      </a-entity>
+
+      <!-- Meta Quest 3S Right Hand Controller -->
+      <a-entity
+        id="right-controller"
+        laser-controls="hand: right"
+        raycaster="objects: .clickable; far: 10; lineColor: #f59e0b; lineOpacity: 0.85"
+      >
+        <a-sphere radius="0.015" color="#f59e0b" material="shader: flat"></a-sphere>
+      </a-entity>
+    </a-entity>
+
+    <!-- ============================================================
+         THE BUS ENVIRONMENT (PROCEDURAL GEOMETRY)
+         Front of bus is at -Z (windshield, steering, driver)
+         Rear of bus is at +Z (passenger rows 1 to 4, exit door)
+         ============================================================ -->
+    <a-entity id="school-bus" position="0 0 0">
+
+      <!-- Floor / Aisle -->
+      <a-box position="0 0.2 0" width="2.7" height="0.1" depth="11" material="color: #1e293b; roughness: 0.8"></a-box>
+      <!-- Center Aisle Non-Slip Mat with Yellow Safety Boundary Lines -->
+      <a-plane position="0 0.255 0" rotation="-90 0 0" width="0.8" height="10.5" material="color: #0f172a; roughness: 0.9"></a-plane>
+      <a-plane position="-0.4 0.256 0" rotation="-90 0 0" width="0.04" height="10.5" material="color: #facc15; roughness: 0.5"></a-plane>
+      <a-plane position="0.4 0.256 0" rotation="-90 0 0" width="0.04" height="10.5" material="color: #facc15; roughness: 0.5"></a-plane>
+
+      <!-- Ceiling -->
+      <a-box position="0 2.45 0" width="2.7" height="0.1" depth="11" material="color: #f1f5f9; roughness: 0.5"></a-box>
+      <!-- Emergency Roof Hatches -->
+      <a-box position="0 2.5 -1.5" width="0.9" height="0.12" depth="0.9" material="color: #dc2626; roughness: 0.4"></a-box>
+      <a-box position="0 2.5 2.5" width="0.9" height="0.12" depth="0.9" material="color: #dc2626; roughness: 0.4"></a-box>
+      
+      <!-- Overhead LED Strip Lights -->
+      <a-plane position="-0.5 2.39 0" rotation="90 0 0" width="0.08" height="9" material="color: #ffffff; emissive: #ffffff; emissiveIntensity: 0.8; shader: flat"></a-plane>
+      <a-plane position="0.5 2.39 0" rotation="90 0 0" width="0.08" height="9" material="color: #ffffff; emissive: #ffffff; emissiveIntensity: 0.8; shader: flat"></a-plane>
+
+      <!-- Front Wall & Windshield Pillar (at -Z) -->
+      <a-box position="0 1.3 -5.45" width="2.7" height="2.2" depth="0.1" material="color: #eab308; roughness: 0.4"></a-box>
+      <!-- Front Windshield Glass -->
+      <a-plane position="0 1.6 -5.4" rotation="0 0 0" width="2.4" height="1.1" material="color: #bae6fd; opacity: 0.25; transparent: true; roughness: 0.1"></a-plane>
+      
+      <!-- Rear Wall with Emergency Exit Door (at +Z) -->
+      <a-box position="0 1.3 5.45" width="2.7" height="2.2" depth="0.1" material="color: #eab308; roughness: 0.4"></a-box>
+      <a-box position="0 1.15 5.39" width="0.9" height="1.8" depth="0.02" material="color: #ca8a04; roughness: 0.5"></a-box>
+      <a-box position="0 1.7 5.38" width="0.6" height="0.5" depth="0.02" material="color: #93c5fd; opacity: 0.35; transparent: true"></a-box>
+
+      <!-- Side Lower Walls (Yellow Exterior) -->
+      <a-box position="-1.35 0.7 0" width="0.08" height="0.9" depth="11" material="color: #eab308; roughness: 0.4"></a-box>
+      <a-box position="1.35 0.7 0" width="0.08" height="0.9" depth="11" material="color: #eab308; roughness: 0.4"></a-box>
+      <!-- Upper Roof Edges -->
+      <a-box position="-1.35 2.25 0" width="0.08" height="0.3" depth="11" material="color: #ca8a04; roughness: 0.4"></a-box>
+      <a-box position="1.35 2.25 0" width="0.08" height="0.3" depth="11" material="color: #ca8a04; roughness: 0.4"></a-box>
+
+      <!-- Yellow Stanchion Grab Poles & Ceiling Rails -->
+      <a-cylinder position="-0.4 1.3 0" radius="0.02" height="2.2" material="color: #facc15; metalness: 0.6; roughness: 0.3"></a-cylinder>
+      <a-cylinder position="0.4 1.3 0" radius="0.02" height="2.2" material="color: #facc15; metalness: 0.6; roughness: 0.3"></a-cylinder>
+      <a-cylinder position="-0.4 2.15 0" rotation="90 0 0" radius="0.02" height="10" material="color: #facc15; metalness: 0.6; roughness: 0.3"></a-cylinder>
+      <a-cylinder position="0.4 2.15 0" rotation="90 0 0" radius="0.02" height="10" material="color: #facc15; metalness: 0.6; roughness: 0.3"></a-cylinder>
+
+      <!-- ============================================================
+           DRIVER AREA (FRONT LEFT AT -Z)
+           ============================================================ -->
+      <a-entity id="driver-station" position="-0.7 0 -4.0">
+        <!-- Driver Seat Base & Cushion -->
+        <a-box position="0 0.45 0.5" width="0.55" height="0.4" depth="0.55" material="color: #1e293b; roughness: 0.8"></a-box>
+        <a-box position="0 0.95 0.73" width="0.55" height="0.7" depth="0.12" material="color: #0f172a; roughness: 0.7"></a-box>
+        <a-cylinder position="0 0.25 0.5" radius="0.05" height="0.4" material="color: #475569; metalness: 0.8"></a-cylinder>
+
+        <!-- Driver Steering Console & Binnacle -->
+        <a-box position="0 0.85 -0.3" rotation="20 0 0" width="0.75" height="0.4" depth="0.55" material="color: #1e293b; roughness: 0.5"></a-box>
+        <!-- Steering Column & Wheel -->
+        <a-cylinder position="0 0.95 -0.25" rotation="50 0 0" radius="0.03" height="0.4" material="color: #334155; metalness: 0.5"></a-cylinder>
+        <a-torus position="0 1.1 -0.12" rotation="-40 0 0" radius="0.22" radius-tubular="0.018" material="color: #020617; roughness: 0.3"></a-torus>
+        <!-- Speedometer cluster -->
+        <a-plane position="0 0.98 -0.29" rotation="45 0 0" width="0.35" height="0.12" material="color: #0284c7; emissive: #0284c7; emissiveIntensity: 0.6; shader: flat"></a-plane>
+
+        <!-- Interior Rear-view Convex Mirror (facing back into passenger cabin) -->
+        <a-box position="0.5 2.05 -0.4" rotation="-10 0 0" width="0.55" height="0.2" depth="0.02" material="color: #e2e8f0; metalness: 0.9; roughness: 0.1"></a-box>
+        <a-cylinder position="0.5 2.2 -0.4" radius="0.015" height="0.2" material="color: #475569"></a-cylinder>
+      </a-entity>
+
+      <!-- ============================================================
+           WINDOWWISE DRIVER MONITORING DASHBOARD (3D INTERACTIVE)
+           Positioned directly to the driver's front-right
+           ============================================================ -->
+      <a-entity id="windowwise-terminal" position="-0.15 1.15 -4.1" rotation="10 25 0">
+        <!-- Terminal Outer Bezel / Housing -->
+        <a-box position="0 0 0" width="0.84" height="0.54" depth="0.04" material="color: #090d16; roughness: 0.4; metalness: 0.7"></a-box>
+        <a-cylinder position="0 -0.28 -0.05" rotation="-15 0 0" radius="0.025" height="0.35" material="color: #334155; metalness: 0.8"></a-cylinder>
+        
+        <!-- Live Dashboard Canvas Display Screen -->
+        <a-plane
+          id="dashboard-screen"
+          position="0 0 0.022"
+          width="0.80"
+          height="0.50"
+          material="shader: flat; src: #dashboard-canvas; transparent: false;"
+        ></a-plane>
+
+        <!-- Interactive 3D Driver Action Buttons Overlay (VR Laser Clickable) -->
+        <!-- Row 1: Voice Warning, Slow Down, Stop Bus -->
+        <a-entity position="0 -0.16 0.04">
+          <!-- Voice Warning Button -->
+          <a-box
+            id="btn-voice"
+            class="clickable"
+            vr-clickable="action: voice; hoverColor: #38bdf8"
+            position="-0.27 0 0"
+            width="0.23"
+            height="0.07"
+            depth="0.02"
+            material="color: #0284c7; roughness: 0.3"
+          >
+            <a-text value="📢 VOICE WARN" align="center" position="0 0 0.012" width="0.95" color="#ffffff" font="roboto"></a-text>
+          </a-box>
+
+          <!-- Slow Down Button -->
+          <a-box
+            id="btn-slow"
+            class="clickable"
+            vr-clickable="action: slow; hoverColor: #fbbf24"
+            position="0 0 0"
+            width="0.21"
+            height="0.07"
+            depth="0.02"
+            material="color: #d97706; roughness: 0.3"
+          >
+            <a-text value="⚠️ SLOW DOWN" align="center" position="0 0 0.012" width="0.95" color="#ffffff" font="roboto"></a-text>
+          </a-box>
+
+          <!-- Stop Bus Button -->
+          <a-box
+            id="btn-stop"
+            class="clickable"
+            vr-clickable="action: stop; hoverColor: #ef4444"
+            position="0.26 0 0"
+            width="0.22"
+            height="0.07"
+            depth="0.02"
+            material="color: #dc2626; roughness: 0.3"
+          >
+            <a-text value="🛑 STOP BUS" align="center" position="0 0 0.012" width="0.95" color="#ffffff" font="roboto"></a-text>
+          </a-box>
+        </a-entity>
+
+        <!-- Row 2: Acknowledge & Notify Attendant -->
+        <a-entity position="0 -0.235 0.04">
+          <!-- Acknowledge Button -->
+          <a-box
+            id="btn-ack"
+            class="clickable"
+            vr-clickable="action: ack; hoverColor: #34d399"
+            position="-0.15 0 0"
+            width="0.27"
+            height="0.06"
+            depth="0.02"
+            material="color: #10b981; roughness: 0.3"
+          >
+            <a-text value="✓ ACKNOWLEDGE" align="center" position="0 0 0.012" width="0.9" color="#ffffff" font="roboto"></a-text>
+          </a-box>
+
+          <!-- Notify Attendant Button -->
+          <a-box
+            id="btn-notify"
+            class="clickable"
+            vr-clickable="action: notify; hoverColor: #818cf8"
+            position="0.16 0 0"
+            width="0.27"
+            height="0.06"
+            depth="0.02"
+            material="color: #6366f1; roughness: 0.3"
+          >
+            <a-text value="🔔 NOTIFY ATTENDANT" align="center" position="0 0 0.012" width="0.9" color="#ffffff" font="roboto"></a-text>
+          </a-box>
+        </a-entity>
+      </a-entity>
+
+      <!-- ============================================================
+           IN-VR SCENARIO SELECTOR & TELEPORT PANEL
+           Mounted right next to the driver's left pillar for instant access in VR!
+           ============================================================ -->
+      <a-entity id="vr-scenario-panel" position="-1.2 1.25 -3.8" rotation="0 85 0">
+        <a-box position="0 0 0" width="0.75" height="0.55" depth="0.03" material="color: #0b1120; roughness: 0.4"></a-box>
+        <a-text value="⚡ VR SCENARIO SELECTOR" position="0 0.22 0.02" align="center" width="1.1" color="#f59e0b" font="roboto"></a-text>
+
+        <!-- Scenario A Button -->
+        <a-box
+          class="clickable"
+          vr-clickable="action: scenario:scenarioA; hoverColor: #ef4444"
+          position="-0.22 0.12 0.02"
+          width="0.28"
+          height="0.07"
+          depth="0.02"
+          material="color: #b91c1c"
+        >
+          <a-text value="A: LEANING OUT" align="center" position="0 0 0.012" width="0.8" color="#fff"></a-text>
+        </a-box>
+
+        <!-- Scenario B Button -->
+        <a-box
+          class="clickable"
+          vr-clickable="action: scenario:scenarioB; hoverColor: #f59e0b"
+          position="0.22 0.12 0.02"
+          width="0.28"
+          height="0.07"
+          depth="0.02"
+          material="color: #b45309"
+        >
+          <a-text value="B: HAND OUT" align="center" position="0 0 0.012" width="0.8" color="#fff"></a-text>
+        </a-box>
+
+        <!-- Scenario C Button -->
+        <a-box
+          class="clickable"
+          vr-clickable="action: scenario:scenarioC; hoverColor: #eab308"
+          position="-0.22 0.02 0.02"
+          width="0.28"
+          height="0.07"
+          depth="0.02"
+          material="color: #854d0e"
+        >
+          <a-text value="C: WINDOW LIMIT" align="center" position="0 0 0.012" width="0.8" color="#fff"></a-text>
+        </a-box>
+
+        <!-- Scenario D Button -->
+        <a-box
+          class="clickable"
+          vr-clickable="action: scenario:scenarioD; hoverColor: #ec4899"
+          position="0.22 0.02 0.02"
+          width="0.28"
+          height="0.07"
+          depth="0.02"
+          material="color: #9d174d"
+        >
+          <a-text value="D: THROW OBJECT" align="center" position="0 0 0.012" width="0.8" color="#fff"></a-text>
+        </a-box>
+
+        <!-- Reset Simulation Button -->
+        <a-box
+          class="clickable"
+          vr-clickable="action: scenario:normal; hoverColor: #10b981"
+          position="0 -0.09 0.02"
+          width="0.6"
+          height="0.07"
+          depth="0.02"
+          material="color: #047857"
+        >
+          <a-text value="🔄 RESET SIMULATION (NORMAL)" align="center" position="0 0 0.012" width="0.9" color="#fff"></a-text>
+        </a-box>
+
+        <!-- Quick In-VR Teleport Buttons -->
+        <a-text value="📍 QUICK TELEPORT:" position="-0.32 -0.19 0.02" width="0.75" color="#94a3b8"></a-text>
+        
+        <a-box
+          class="clickable"
+          vr-clickable="action: teleport:driver; hoverColor: #38bdf8"
+          position="-0.2 -0.23 0.02"
+          width="0.18"
+          height="0.045"
+          depth="0.02"
+          material="color: #1e293b"
+        >
+          <a-text value="Driver" align="center" position="0 0 0.012" width="0.8" color="#38bdf8"></a-text>
+        </a-box>
+
+        <a-box
+          class="clickable"
+          vr-clickable="action: teleport:leo; hoverColor: #38bdf8"
+          position="0 -0.23 0.02"
+          width="0.18"
+          height="0.045"
+          depth="0.02"
+          material="color: #1e293b"
+        >
+          <a-text value="Seat 2A" align="center" position="0 0 0.012" width="0.8" color="#ef4444"></a-text>
+        </a-box>
+
+        <a-box
+          class="clickable"
+          vr-clickable="action: teleport:mid; hoverColor: #38bdf8"
+          position="0.2 -0.23 0.02"
+          width="0.18"
+          height="0.045"
+          depth="0.02"
+          material="color: #1e293b"
+        >
+          <a-text value="Mid Aisle" align="center" position="0 0 0.012" width="0.8" color="#38bdf8"></a-text>
+        </a-box>
+      </a-entity>
+
+      <!-- ============================================================
+           SEATS AND PASSENGERS (ROWS 1 TO 4, LEFT & RIGHT)
+           ============================================================ -->
+      <a-entity id="passenger-cabin">
+        <!-- ROW 1 -->
+        <!-- Seat 1A (Left - Window Limit Exceeded Scenario) -->
+        <a-entity id="seat-unit-1A" position="-0.85 0.2 -2.0"></a-entity>
+        <!-- Seat 1B (Right) -->
+        <a-entity id="seat-unit-1B" position="0.85 0.2 -2.0"></a-entity>
+
+        <!-- ROW 2 -->
+        <!-- Seat 2A (Left - Head/Body Leaning Scenario) -->
+        <a-entity id="seat-unit-2A" position="-0.85 0.2 -0.5"></a-entity>
+        <!-- Seat 2B (Right) -->
+        <a-entity id="seat-unit-2B" position="0.85 0.2 -0.5"></a-entity>
+
+        <!-- ROW 3 -->
+        <!-- Seat 3A (Left) -->
+        <a-entity id="seat-unit-3A" position="-0.85 0.2 1.0"></a-entity>
+        <!-- Seat 3B (Right - Hand Protrusion Scenario) -->
+        <a-entity id="seat-unit-3B" position="0.85 0.2 1.0"></a-entity>
+
+        <!-- ROW 4 -->
+        <!-- Seat 4A (Left - Object Thrown Scenario) -->
+        <a-entity id="seat-unit-4A" position="-0.85 0.2 2.5"></a-entity>
+        <!-- Seat 4B (Right) -->
+        <a-entity id="seat-unit-4B" position="0.85 0.2 2.5"></a-entity>
+      </a-entity>
+
+      <!-- ============================================================
+           BUS WINDOWS & SIMULATED SENSOR TRIPWIRE GRIDS
+           ============================================================ -->
+      <a-entity id="windows-group">
+        <!-- Left Side Windows -->
+        <a-entity id="window-frame-1A" position="-1.33 1.55 -2.0" rotation="0 0 0"></a-entity>
+        <a-entity id="window-frame-2A" position="-1.33 1.55 -0.5" rotation="0 0 0"></a-entity>
+        <a-entity id="window-frame-3A" position="-1.33 1.55 1.0" rotation="0 0 0"></a-entity>
+        <a-entity id="window-frame-4A" position="-1.33 1.55 2.5" rotation="0 0 0"></a-entity>
+
+        <!-- Right Side Windows -->
+        <a-entity id="window-frame-1B" position="1.33 1.55 -2.0" rotation="0 180 0"></a-entity>
+        <a-entity id="window-frame-2B" position="1.33 1.55 -0.5" rotation="0 180 0"></a-entity>
+        <a-entity id="window-frame-3B" position="1.33 1.55 1.0" rotation="0 180 0"></a-entity>
+        <a-entity id="window-frame-4B" position="1.33 1.55 2.5" rotation="0 180 0"></a-entity>
+      </a-entity>
+
+      <!-- Animated Thrown Projectile (Scenario D) -->
+      <a-cylinder
+        id="flying-projectile"
+        position="-1.3 1.5 2.5"
+        radius="0.04"
+        height="0.14"
+        material="color: #ef4444; roughness: 0.3"
+        visible="false"
+      ></a-cylinder>
+
+    </a-entity> <!-- /school-bus -->
+
+    <!-- ============================================================
+         OUTSIDE MOVING ENVIRONMENT (ROAD, TREES, GROUND)
+         Road stripes move towards +Z simulating forward bus travel
+         ============================================================ -->
+    <a-entity id="scenery-group">
+      <!-- Ground plane / Grass -->
+      <a-plane position="0 -0.05 0" rotation="-90 0 0" width="80" height="150" material="color: #3f6212; roughness: 0.9"></a-plane>
+
+      <!-- Asphalt Road -->
+      <a-plane position="0 0 0" rotation="-90 0 0" width="7" height="150" material="color: #1e293b; roughness: 0.7"></a-plane>
+      <a-plane position="-3.5 0.01 0" rotation="-90 0 0" width="0.2" height="150" material="color: #ffffff; roughness: 0.5"></a-plane>
+      <a-plane position="3.5 0.01 0" rotation="-90 0 0" width="0.2" height="150" material="color: #ffffff; roughness: 0.5"></a-plane>
+
+      <!-- Moving Center Dashed Lines -->
+      <a-entity id="road-lines-container"></a-entity>
+
+      <!-- Roadside Props (Trees, Poles) -->
+      <a-entity id="roadside-props-container"></a-entity>
+    </a-entity>
+
+  </a-scene>
+
+  <!-- ============================================================
        APPLICATION LOGIC & SMART SAFETY SYSTEM
        ============================================================ -->
-    <script>
-        /**
-         * WINDOWWISE SMART SAFETY SYSTEM ENGINE
-         * Manages:
-         * - Web Audio synthesis (alarms, air brakes, engine pitch, synthesized PA announcements)
-         * - Live 2D dynamic canvas rendering on 3D driver dashboard
-         * - Procedural 3D passenger generation & animation
-         * - Sensor tripwire grids & breach detection
-         * - Scenario State Machine (A: Leaning, B: Hand, C: Aperture Limit, D: Projectile)
-         * - Driver Preventive Response Execution
-         * - Meta Quest 3S Controller interactions & Desktop viewpoints
-         */
-
-        class WindowWiseSystem {
-            constructor() {
-                this.status = 'NORMAL'; // 'NORMAL', 'CAUTION', 'WARNING', 'CRITICAL'
-                this.speed = 45; // km/h
-                this.targetSpeed = 45;
-                this.currentScenario = 'normal';
-                this.showSensorMesh = true;
-
-                // Active Alert Telemetry
-                this.activeAlert = {
-                    title: 'ALL SYSTEMS SECURE',
-                    seat: 'NONE',
-                    type: 'NORMAL MONITORING',
-                    severity: 'SAFE',
-                    description: 'All 8 window apertures within safe parameters.',
-                    time: '00:00:00',
-                    acknowledged: false
-                };
-
-                // Alert History Log
-                this.alertHistory = [
-                    { time: '14:28:10', seat: 'SYS', event: 'WindowWise v2.4 Initialized', level: 'INFO' },
-                    { time: '14:29:05', seat: 'ALL', event: 'Perimeter IR Grids Calibrated', level: 'INFO' }
-                ];
-
-                // Seat states mapping
-                this.seatStates = {
-                    '1A': { status: 'NORMAL', windowOpen: 0.05, passenger: 'Sam' },
-                    '1B': { status: 'NORMAL', windowOpen: 0.0, passenger: 'Lucas' },
-                    '2A': { status: 'NORMAL', windowOpen: 0.0, passenger: 'Leo' },
-                    '2B': { status: 'NORMAL', windowOpen: 0.0, passenger: 'Emma' },
-                    '3A': { status: 'NORMAL', windowOpen: 0.0, passenger: 'Noah' },
-                    '3B': { status: 'NORMAL', windowOpen: 0.0, passenger: 'Maya' },
-                    '4A': { status: 'NORMAL', windowOpen: 0.0, passenger: 'Ethan' },
-                    '4B': { status: 'NORMAL', windowOpen: 0.0, passenger: 'Sophia' }
-                };
-
-                // Audio Context (Synthesizer)
-                this.audioCtx = null;
-                this.alarmOsc = null;
-                this.engineOsc = null;
-                this.engineGain = null;
-                this.isMuted = false;
-
-                this.init();
-            }
-
-            init() {
-                // Setup 3D elements once A-Frame is ready
-                if (document.readyState === 'complete') {
-                    this.buildWorld();
-                } else {
-                    window.addEventListener('load', () => this.buildWorld());
-                }
-
-                // Setup 3D interactive button listeners
-                this.setupButtons();
-
-                // Setup Dashboard Render Loop
-                this.canvas = document.getElementById('dashboard-canvas');
-                this.ctx = this.canvas.getContext('2d');
-                this.startDashboardLoop();
-
-                // Scenery Animation Loop
-                this.startSceneryLoop();
-            }
-
-            // Audio Initializer (Web Audio API for 100% offline self-contained operation)
-            initAudio() {
-                if (this.audioCtx) return;
-                try {
-                    const AudioContext = window.AudioContext || window.webkitAudioContext;
-                    this.audioCtx = new AudioContext();
-
-                    // Engine ambient hum
-                    this.engineOsc = this.audioCtx.createOscillator();
-                    this.engineGain = this.audioCtx.createGain();
-                    this.engineOsc.type = 'sawtooth';
-                    this.engineOsc.frequency.setValueAtTime(45, this.audioCtx.currentTime);
-
-                    // Low pass filter to make it sound like a smooth diesel engine
-                    const filter = this.audioCtx.createBiquadFilter();
-                    filter.type = 'lowpass';
-                    filter.frequency.setValueAtTime(140, this.audioCtx.currentTime);
-
-                    this.engineGain.gain.setValueAtTime(0.04, this.audioCtx.currentTime);
-                    this.engineOsc.connect(filter);
-                    filter.connect(this.engineGain);
-                    this.engineGain.connect(this.audioCtx.destination);
-                    this.engineOsc.start();
-                } catch (e) {
-                    console.warn('Audio Context init prevented:', e);
-                }
-            }
-
-            // Procedural Audio Alerts
-            playBeep(freq = 600, duration = 0.15, type = 'sine') {
-                if (!this.audioCtx) return;
-                try {
-                    const osc = this.audioCtx.createOscillator();
-                    const gain = this.audioCtx.createGain();
-                    osc.type = type;
-                    osc.frequency.setValueAtTime(freq, this.audioCtx.currentTime);
-                    gain.gain.setValueAtTime(0.15, this.audioCtx.currentTime);
-                    gain.gain.exponentialRampToValueAtTime(0.001, this.audioCtx.currentTime + duration);
-                    osc.connect(gain);
-                    gain.connect(this.audioCtx.destination);
-                    osc.start();
-                    osc.stop(this.audioCtx.currentTime + duration);
-                } catch (e) { }
-            }
-
-            playAlarm(severity = 'CRITICAL') {
-                if (!this.audioCtx) return;
-                this.stopAlarm();
-                try {
-                    const now = this.audioCtx.currentTime;
-                    this.alarmOsc = this.audioCtx.createOscillator();
-                    const alarmGain = this.audioCtx.createGain();
-
-                    if (severity === 'CRITICAL') {
-                        this.alarmOsc.type = 'sawtooth';
-                        // Alternating two-tone siren
-                        this.alarmOsc.frequency.setValueAtTime(880, now);
-                        this.alarmOsc.frequency.setValueAtTime(659, now + 0.25);
-                        this.alarmOsc.frequency.setValueAtTime(880, now + 0.5);
-                        alarmGain.gain.setValueAtTime(0.2, now);
-                        alarmGain.gain.exponentialRampToValueAtTime(0.01, now + 1.2);
-                        this.alarmOsc.connect(alarmGain);
-                        alarmGain.connect(this.audioCtx.destination);
-                        this.alarmOsc.start();
-                        this.alarmOsc.stop(now + 1.2);
-                    } else {
-                        // Caution two-chime
-                        this.playBeep(520, 0.15);
-                        setTimeout(() => this.playBeep(680, 0.2), 160);
-                    }
-                } catch (e) { }
-            }
-
-            stopAlarm() {
-                if (this.alarmOsc) {
-                    try { this.alarmOsc.stop(); } catch (e) { }
-                    this.alarmOsc = null;
-                }
-            }
-
-            playBrakeHiss() {
-                if (!this.audioCtx) return;
-                try {
-                    // White noise burst for air brake release
-                    const bufferSize = this.audioCtx.sampleRate * 0.8;
-                    const buffer = this.audioCtx.createBuffer(1, bufferSize, this.audioCtx.sampleRate);
-                    const data = buffer.getChannelData(0);
-                    for (let i = 0; i < bufferSize; i++) {
-                        data[i] = Math.random() * 2 - 1;
-                    }
-                    const noise = this.audioCtx.createBufferSource();
-                    noise.buffer = buffer;
-                    const filter = this.audioCtx.createBiquadFilter();
-                    filter.type = 'bandpass';
-                    filter.frequency.value = 1800;
-                    const gain = this.audioCtx.createGain();
-                    gain.gain.setValueAtTime(0.15, this.audioCtx.currentTime);
-                    gain.gain.exponentialRampToValueAtTime(0.001, this.audioCtx.currentTime + 0.8);
-                    noise.connect(filter);
-                    filter.connect(gain);
-                    gain.connect(this.audioCtx.destination);
-                    noise.start();
-                } catch (e) { }
-            }
-
-            // Voice Warning Synthesizer (Driver PA system)
-            speak(text) {
-                if ('speechSynthesis' in window) {
-                    window.speechSynthesis.cancel();
-                    const utterance = new SpeechSynthesisUtterance(text);
-                    utterance.rate = 1.05;
-                    utterance.pitch = 1.0;
-                    window.speechSynthesis.speak(utterance);
-                }
-            }
-
-            // Build 3D World (Seats, Passengers, Windows, Road)
-            buildWorld() {
-                this.buildAllSeatsAndPassengers();
-                this.buildWindows();
-                this.buildRoadside();
-            }
-
-            buildAllSeatsAndPassengers() {
-                const seatsConfig = [
-                    { id: '1A', x: -0.85, z: 2.0, passenger: 'Sam', color: '#3b82f6', cap: '#1d4ed8' },
-                    { id: '1B', x: 0.85, z: 2.0, passenger: 'Lucas', color: '#10b981', cap: '#047857' },
-                    { id: '2A', x: -0.85, z: 0.5, passenger: 'Leo', color: '#ef4444', cap: '#b91c1c' },
-                    { id: '2B', x: 0.85, z: 0.5, passenger: 'Emma', color: '#ec4899', cap: '#be185d' },
-                    { id: '3A', x: -0.85, z: -1.0, passenger: 'Noah', color: '#8b5cf6', cap: '#6d28d9' },
-                    { id: '3B', x: 0.85, z: -1.0, passenger: 'Maya', color: '#f59e0b', cap: '#b45309' },
-                    { id: '4A', x: -0.85, z: -2.5, passenger: 'Ethan', color: '#06b6d4', cap: '#0e7490' },
-                    { id: '4B', x: 0.85, z: -2.5, passenger: 'Sophia', color: '#84cc16', cap: '#4d7c0f' }
-                ];
-
-                seatsConfig.forEach(cfg => {
-                    const container = document.getElementById(`seat-unit-${cfg.id}`);
-                    if (!container) return;
-
-                    // Seat Frame (Bench & Backrest)
-                    const seatBench = document.createElement('a-box');
-                    seatBench.setAttribute('position', '0 0.45 0');
-                    seatBench.setAttribute('width', '0.75');
-                    seatBench.setAttribute('height', '0.12');
-                    seatBench.setAttribute('depth', '0.55');
-                    seatBench.setAttribute('material', 'color: #1e3a8a; roughness: 0.7'); // Blue vinyl
-                    container.appendChild(seatBench);
-
-                    const seatBack = document.createElement('a-box');
-                    seatBack.setAttribute('position', '0 0.85 0.23');
-                    seatBack.setAttribute('width', '0.75');
-                    seatBack.setAttribute('height', '0.7');
-                    seatBack.setAttribute('depth', '0.08');
-                    seatBack.setAttribute('material', 'color: #1e3a8a; roughness: 0.7');
-                    container.appendChild(seatBack);
-
-                    // Top Yellow Seat Grab Bar
-                    const grabBar = document.createElement('a-cylinder');
-                    grabBar.setAttribute('position', '0 1.22 0.23');
-                    grabBar.setAttribute('rotation', '0 0 90');
-                    grabBar.setAttribute('radius', '0.015');
-                    grabBar.setAttribute('height', '0.7');
-                    grabBar.setAttribute('material', 'color: #facc15; metalness: 0.7');
-                    container.appendChild(grabBar);
-
-                    // Seat Leg Stanchion
-                    const leg = document.createElement('a-cylinder');
-                    leg.setAttribute('position', '0 0.2 0');
-                    leg.setAttribute('radius', '0.025');
-                    leg.setAttribute('height', '0.4');
-                    leg.setAttribute('material', 'color: #334155; metalness: 0.8');
-                    container.appendChild(leg);
-
-                    // Passenger Avatar Container
-                    const pass = document.createElement('a-entity');
-                    pass.setAttribute('id', `passenger-${cfg.id}`);
-                    pass.setAttribute('position', '0 0.52 0.05');
-
-                    // Torso / Jacket
-                    const torso = document.createElement('a-box');
-                    torso.setAttribute('id', `torso-${cfg.id}`);
-                    torso.setAttribute('position', '0 0.35 0');
-                    torso.setAttribute('width', '0.36');
-                    torso.setAttribute('height', '0.45');
-                    torso.setAttribute('depth', '0.22');
-                    torso.setAttribute('material', `color: ${cfg.color}; roughness: 0.6`);
-                    pass.appendChild(torso);
-
-                    // Head & Cap
-                    const headGroup = document.createElement('a-entity');
-                    headGroup.setAttribute('id', `head-${cfg.id}`);
-                    headGroup.setAttribute('position', '0 0.68 0');
-
-                    const headSphere = document.createElement('a-sphere');
-                    headSphere.setAttribute('radius', '0.12');
-                    headSphere.setAttribute('material', 'color: #ffd1b3; roughness: 0.8');
-                    headGroup.appendChild(headSphere);
-
-                    const cap = document.createElement('a-cylinder');
-                    cap.setAttribute('position', '0 0.09 0');
-                    cap.setAttribute('radius', '0.13');
-                    cap.setAttribute('height', '0.06');
-                    cap.setAttribute('material', `color: ${cfg.cap}`);
-                    headGroup.appendChild(cap);
-
-                    const capVisor = document.createElement('a-box');
-                    capVisor.setAttribute('position', '0 0.08 0.13');
-                    capVisor.setAttribute('width', '0.14');
-                    capVisor.setAttribute('height', '0.015');
-                    capVisor.setAttribute('depth', '0.1');
-                    capVisor.setAttribute('material', `color: ${cfg.cap}`);
-                    headGroup.appendChild(capVisor);
-
-                    pass.appendChild(headGroup);
-
-                    // Left Arm (closer to window if A side)
-                    const armLeft = document.createElement('a-cylinder');
-                    armLeft.setAttribute('id', `armLeft-${cfg.id}`);
-                    armLeft.setAttribute('position', '-0.22 0.3 0');
-                    armLeft.setAttribute('radius', '0.04');
-                    armLeft.setAttribute('height', '0.35');
-                    armLeft.setAttribute('material', `color: ${cfg.color}`);
-                    pass.appendChild(armLeft);
-
-                    // Right Arm (closer to window if B side)
-                    const armRight = document.createElement('a-cylinder');
-                    armRight.setAttribute('id', `armRight-${cfg.id}`);
-                    armRight.setAttribute('position', '0.22 0.3 0');
-                    armRight.setAttribute('radius', '0.04');
-                    armRight.setAttribute('height', '0.35');
-                    armRight.setAttribute('material', `color: ${cfg.color}`);
-                    pass.appendChild(armRight);
-
-                    container.appendChild(pass);
-                });
-            }
-
-            buildWindows() {
-                const windowIds = ['1A', '2A', '3A', '4A', '1B', '2B', '3B', '4B'];
-                windowIds.forEach(id => {
-                    const frame = document.getElementById(`window-frame-${id}`);
-                    if (!frame) return;
-
-                    // Outer Metal Window Frame
-                    const border = document.createElement('a-box');
-                    border.setAttribute('width', '0.05');
-                    border.setAttribute('height', '0.9');
-                    border.setAttribute('depth', '1.1');
-                    border.setAttribute('material', 'color: #0f172a; roughness: 0.5; metalness: 0.7');
-                    frame.appendChild(border);
-
-                    // Lower Fixed Glass Pane
-                    const lowerGlass = document.createElement('a-box');
-                    lowerGlass.setAttribute('position', '0 -0.2 0');
-                    lowerGlass.setAttribute('width', '0.02');
-                    lowerGlass.setAttribute('height', '0.45');
-                    lowerGlass.setAttribute('depth', '1.02');
-                    lowerGlass.setAttribute('material', 'color: #7dd3fc; opacity: 0.3; transparent: true; roughness: 0.1');
-                    frame.appendChild(lowerGlass);
-
-                    // Upper Slideable Sash Glass Pane
-                    const sash = document.createElement('a-box');
-                    sash.setAttribute('id', `window-sash-${id}`);
-                    sash.setAttribute('position', '0 0.2 0');
-                    sash.setAttribute('width', '0.025');
-                    sash.setAttribute('height', '0.45');
-                    sash.setAttribute('depth', '1.02');
-                    sash.setAttribute('material', 'color: #38bdf8; opacity: 0.35; transparent: true; roughness: 0.1');
-
-                    // Latch Handle
-                    const latch = document.createElement('a-box');
-                    latch.setAttribute('position', '0.02 0.18 0');
-                    latch.setAttribute('width', '0.03');
-                    latch.setAttribute('height', '0.04');
-                    latch.setAttribute('depth', '0.2');
-                    latch.setAttribute('material', 'color: #334155; metalness: 0.9');
-                    sash.appendChild(latch);
-                    frame.appendChild(sash);
-
-                    // Simulated IR Laser Sensor Curtain (Perimeter bounding lines)
-                    const irCurtain = document.createElement('a-plane');
-                    irCurtain.setAttribute('id', `sensor-mesh-${id}`);
-                    irCurtain.setAttribute('position', '-0.01 0.15 0');
-                    irCurtain.setAttribute('rotation', '0 90 0');
-                    irCurtain.setAttribute('width', '1.0');
-                    irCurtain.setAttribute('height', '0.55');
-                    irCurtain.setAttribute('material', 'color: #10b981; opacity: 0.15; transparent: true; wireframe: true; wireframeLinewidth: 2; shader: flat');
-                    frame.appendChild(irCurtain);
-
-                    // Top Status LED on Window Pillar
-                    const statusLed = document.createElement('a-sphere');
-                    statusLed.setAttribute('id', `sensor-led-${id}`);
-                    statusLed.setAttribute('position', '0.02 0.44 0.52');
-                    statusLed.setAttribute('radius', '0.02');
-                    statusLed.setAttribute('material', 'color: #10b981; emissive: #10b981; emissiveIntensity: 0.8; shader: flat');
-                    frame.appendChild(statusLed);
-                });
-            }
-
-            buildRoadside() {
-                const roadLines = document.getElementById('road-lines-container');
-                for (let i = -70; i <= 70; i += 7) {
-                    const dash = document.createElement('a-plane');
-                    dash.setAttribute('class', 'road-dash');
-                    dash.setAttribute('position', `0 0.01 ${i}`);
-                    dash.setAttribute('rotation', '-90 0 0');
-                    dash.setAttribute('width', '0.25');
-                    dash.setAttribute('height', '4');
-                    dash.setAttribute('material', 'color: #facc15; roughness: 0.5');
-                    roadLines.appendChild(dash);
-                }
-
-                const propsContainer = document.getElementById('roadside-props-container');
-                for (let z = -60; z <= 60; z += 20) {
-                    // Left tree
-                    const treeGroupL = document.createElement('a-entity');
-                    treeGroupL.setAttribute('class', 'roadside-tree');
-                    treeGroupL.setAttribute('position', `-8 0 ${z}`);
-                    const trunkL = document.createElement('a-cylinder');
-                    trunkL.setAttribute('position', '0 1.5 0');
-                    trunkL.setAttribute('radius', '0.25');
-                    trunkL.setAttribute('height', '3');
-                    trunkL.setAttribute('material', 'color: #78350f; roughness: 0.9');
-                    const foliageL = document.createElement('a-cone');
-                    foliageL.setAttribute('position', '0 4 0');
-                    foliageL.setAttribute('radius-bottom', '1.8');
-                    foliageL.setAttribute('height', '3.5');
-                    foliageL.setAttribute('material', 'color: #15803d; roughness: 0.8');
-                    treeGroupL.appendChild(trunkL);
-                    treeGroupL.appendChild(foliageL);
-                    propsContainer.appendChild(treeGroupL);
-
-                    // Right street pole
-                    const poleR = document.createElement('a-entity');
-                    poleR.setAttribute('class', 'roadside-pole');
-                    poleR.setAttribute('position', `6 0 ${z + 10}`);
-                    const mast = document.createElement('a-cylinder');
-                    mast.setAttribute('position', '0 2.5 0');
-                    mast.setAttribute('radius', '0.08');
-                    mast.setAttribute('height', '5');
-                    mast.setAttribute('material', 'color: #64748b; metalness: 0.7');
-                    poleR.appendChild(mast);
-                    propsContainer.appendChild(poleR);
-                }
-            }
-
-            // 3D Button Setup
-            setupButtons() {
-                const btnVoice = document.getElementById('btn-voice');
-                const btnSlow = document.getElementById('btn-slow');
-                const btnStop = document.getElementById('btn-stop');
-                const btnAck = document.getElementById('btn-ack');
-                const btnNotify = document.getElementById('btn-notify');
-
-                if (btnVoice) btnVoice.addEventListener('click', () => this.handleDriverAction('voice'));
-                if (btnSlow) btnSlow.addEventListener('click', () => this.handleDriverAction('slow'));
-                if (btnStop) btnStop.addEventListener('click', () => this.handleDriverAction('stop'));
-                if (btnAck) btnAck.addEventListener('click', () => this.handleDriverAction('ack'));
-                if (btnNotify) btnNotify.addEventListener('click', () => this.handleDriverAction('notify'));
-            }
-
-            // DRIVER ACTION RESPONSES
-            handleDriverAction(action) {
-                this.initAudio();
-                this.playBeep(800, 0.08);
-
-                switch (action) {
-                    case 'voice':
-                        this.showToast('📢 Driver issued PA Voice Warning');
-                        if (this.currentScenario === 'scenarioA') {
-                            this.speak('Attention Leo at Seat 2A! Please pull your head and body back inside the bus immediately!');
-                            setTimeout(() => this.resolvePassengerBehavior('2A', 'Leo safely seated inside.'), 2200);
-                        } else if (this.currentScenario === 'scenarioB') {
-                            this.speak('Attention Maya at Seat 3B. Please bring your arm inside the window.');
-                            setTimeout(() => this.resolvePassengerBehavior('3B', 'Maya pulled arm inside.'), 2000);
-                        } else if (this.currentScenario === 'scenarioC') {
-                            this.speak('Sam at Seat 1A, please do not open the window past the safety mark.');
-                            setTimeout(() => this.resolvePassengerBehavior('1A', 'Window closed to safe limit.'), 2000);
-                        } else if (this.currentScenario === 'scenarioD') {
-                            this.speak('Ethan at Seat 4A! Throwing objects out of the bus is strictly prohibited!');
-                            setTimeout(() => this.resolvePassengerBehavior('4A', 'Hazard averted. Incident logged.'), 2000);
-                        } else {
-                            this.speak('Attention all passengers: Please ensure windows remain at safe limits.');
-                        }
-                        this.logEvent('DRIVER', 'PA Voice Warning Broadcasted', 'ACTION');
-                        break;
-
-                    case 'slow':
-                        this.targetSpeed = 15;
-                        this.playBrakeHiss();
-                        this.showToast('⚠️ Vehicle Slowing to Caution Speed (15 km/h)');
-                        this.logEvent('DRIVER', 'Vehicle Speed Reduced to 15 km/h', 'ACTION');
-                        break;
-
-                    case 'stop':
-                        this.targetSpeed = 0;
-                        this.playBrakeHiss();
-                        this.showToast('🛑 Bus Coming to Complete Stop');
-                        this.logEvent('DRIVER', 'Emergency Bus Stop Activated', 'ACTION');
-                        setTimeout(() => {
-                            if (this.currentScenario !== 'normal') {
-                                this.resolvePassengerBehavior(this.activeAlert.seat, 'Bus halted safely. Attendant inspected.');
-                            }
-                        }, 1800);
-                        break;
-
-                    case 'ack':
-                        this.activeAlert.acknowledged = true;
-                        this.stopAlarm();
-                        this.showToast('✓ Alert Acknowledged by Driver');
-                        this.logEvent('DRIVER', `Alert for Seat ${this.activeAlert.seat} Acknowledged`, 'ACK');
-                        break;
-
-                    case 'notify':
-                        this.playBeep(950, 0.2);
-                        this.showToast('🔔 Notification Dispatched to Bus Attendant & Dispatch');
-                        this.logEvent('DRIVER', `Attendant Alert Dispatched -> Seat ${this.activeAlert.seat}`, 'ACTION');
-                        break;
-                }
-            }
-
-            // SCENARIO CONTROLLER & BEHAVIOR TRIGGERS
-            selectScenario(scenarioKey) {
-                this.initAudio();
-                this.currentScenario = scenarioKey;
-                this.resetAllAvatars();
-
-                // Update UI Active State
-                document.querySelectorAll('.scenario-btn').forEach(b => b.classList.remove('active'));
-                const matched = Array.from(document.querySelectorAll('.scenario-btn')).find(b => b.getAttribute('onclick').includes(scenarioKey));
-                if (matched) matched.classList.add('active');
-
-                switch (scenarioKey) {
-                    case 'normal':
-                        this.setNormalState();
-                        break;
-
-                    case 'scenarioA': // Passenger Leaning Outside
-                        this.triggerScenarioA();
-                        break;
-
-                    case 'scenarioB': // Hand Outside Window
-                        this.triggerScenarioB();
-                        break;
-
-                    case 'scenarioC': // Window Open Beyond Safe Limit
-                        this.triggerScenarioC();
-                        break;
-
-                    case 'scenarioD': // Object Thrown Outside
-                        this.triggerScenarioD();
-                        break;
-                }
-            }
-
-            resetScenario() {
-                this.targetSpeed = 45;
-                this.selectScenario('normal');
-                this.showToast('🔄 Simulation Reset to Normal Cruising');
-            }
-
-            setNormalState() {
-                this.status = 'NORMAL';
-                this.stopAlarm();
-                this.activeAlert = {
-                    title: 'ALL SYSTEMS SECURE',
-                    seat: 'NONE',
-                    type: 'NORMAL MONITORING',
-                    severity: 'SAFE',
-                    description: 'All 8 window apertures within safe limits (≤10cm).',
-                    time: new Date().toLocaleTimeString(),
-                    acknowledged: false
-                };
-                this.updateHUDHeader();
-                this.resetWindowSensors();
-            }
-
-            // SCENARIO A: Passenger Leaning Outside (Seat 2A - Leo)
-            triggerScenarioA() {
-                this.status = 'CRITICAL';
-                this.activeAlert = {
-                    title: 'CRITICAL: HEAD/BODY LEANING OUTSIDE',
-                    seat: '2A',
-                    type: 'PERIMETER BREACH (TORSO)',
-                    severity: 'CRITICAL',
-                    description: 'Child passenger extending upper torso through open window into traffic lane!',
-                    time: new Date().toLocaleTimeString(),
-                    acknowledged: false
-                };
-
-                // Animate Window 2A open
-                this.setWindowAperture('2A', 0.38);
-
-                // Animate Leo's body leaning out through left window
-                const pass = document.getElementById('passenger-2A');
-                if (pass) {
-                    pass.setAttribute('position', '-0.38 0.65 0.05');
-                    pass.setAttribute('rotation', '0 0 38');
-                }
-
-                // Highlight sensor grid red
-                this.highlightSensorGrid('2A', '#ef4444', 0.55);
-                this.playAlarm('CRITICAL');
-                this.logEvent('ALERT', 'CRITICAL BREACH: Torso Extrusion at Seat 2A', 'CRITICAL');
-                this.updateHUDHeader();
-            }
-
-            // SCENARIO B: Hand/Arm Outside Window (Seat 3B - Maya)
-            triggerScenarioB() {
-                this.status = 'WARNING';
-                this.activeAlert = {
-                    title: 'WARNING: HAND EXTENDED OUTSIDE',
-                    seat: '3B',
-                    type: 'EXTREMITY PROTRUSION',
-                    severity: 'WARNING',
-                    description: 'Passenger hand extended 18cm past window frame.',
-                    time: new Date().toLocaleTimeString(),
-                    acknowledged: false
-                };
-
-                // Window open partly
-                this.setWindowAperture('3B', 0.22);
-
-                // Animate Maya's right arm extended out the right window
-                const armRight = document.getElementById('armRight-3B');
-                if (armRight) {
-                    armRight.setAttribute('position', '0.45 0.45 0');
-                    armRight.setAttribute('rotation', '0 0 -85');
-                }
-
-                this.highlightSensorGrid('3B', '#f59e0b', 0.45);
-                this.playAlarm('WARNING');
-                this.logEvent('ALERT', 'Hand Protrusion Detected at Seat 3B', 'WARNING');
-                this.updateHUDHeader();
-            }
-
-            // SCENARIO C: Window Open Beyond Safe Limits (Seat 1A - Sam)
-            triggerScenarioC() {
-                this.status = 'CAUTION';
-                this.activeAlert = {
-                    title: 'ALERT: WINDOW THRESHOLD EXCEEDED',
-                    seat: '1A',
-                    type: 'APERTURE OVER-LIMIT (>15cm)',
-                    severity: 'CAUTION',
-                    description: 'Window aperture opened to 28cm (Safe Limit: 10cm).',
-                    time: new Date().toLocaleTimeString(),
-                    acknowledged: false
-                };
-
-                // Slide window down beyond threshold
-                this.setWindowAperture('1A', 0.32);
-
-                // Sam's arm on latch
-                const armLeft = document.getElementById('armLeft-1A');
-                if (armLeft) {
-                    armLeft.setAttribute('position', '-0.32 0.38 0');
-                    armLeft.setAttribute('rotation', '0 0 45');
-                }
-
-                this.highlightSensorGrid('1A', '#eab308', 0.35);
-                this.playAlarm('CAUTION');
-                this.logEvent('ALERT', 'Window Aperture Threshold Exceeded at Seat 1A', 'CAUTION');
-                this.updateHUDHeader();
-            }
-
-            // SCENARIO D: Object Thrown Outside (Seat 4A - Ethan)
-            triggerScenarioD() {
-                this.status = 'CRITICAL';
-                this.activeAlert = {
-                    title: 'HIGH ALERT: OBJECT THROWN OUTSIDE',
-                    seat: '4A',
-                    type: 'PROJECTILE DEPLOYED',
-                    severity: 'CRITICAL',
-                    description: 'Object ejected at speed into oncoming roadway traffic!',
-                    time: new Date().toLocaleTimeString(),
-                    acknowledged: false
-                };
-
-                this.setWindowAperture('4A', 0.35);
-
-                // Animate Ethan throwing
-                const armLeft = document.getElementById('armLeft-4A');
-                if (armLeft) {
-                    armLeft.setAttribute('position', '-0.35 0.5 0.1');
-                    armLeft.setAttribute('rotation', '30 0 75');
-                }
-
-                // Animate flying bottle projectile
-                const projectile = document.getElementById('flying-projectile');
-                if (projectile) {
-                    projectile.setAttribute('visible', 'true');
-                    projectile.setAttribute('position', '-1.35 1.5 -2.5');
-
-                    let progress = 0;
-                    const throwInterval = setInterval(() => {
-                        progress += 0.05;
-                        projectile.setAttribute('position', `${-1.35 - progress * 1.5} ${1.5 - progress * 0.9} ${-2.5 - progress * 2}`);
-                        if (progress >= 1.5) {
-                            clearInterval(throwInterval);
-                            setTimeout(() => projectile.setAttribute('visible', 'false'), 2000);
-                        }
-                    }, 40);
-                }
-
-                this.highlightSensorGrid('4A', '#ef4444', 0.6);
-                this.playAlarm('CRITICAL');
-                this.logEvent('ALERT', 'Foreign Projectile Ejection at Seat 4A', 'CRITICAL');
-                this.updateHUDHeader();
-            }
-
-            // Passenger retraction & safety resolution
-            resolvePassengerBehavior(seatId, message) {
-                this.resetAllAvatars();
-                this.stopAlarm();
-                this.status = 'NORMAL';
-                this.activeAlert = {
-                    title: 'HAZARD MITIGATED',
-                    seat: seatId,
-                    type: 'RESOLVED',
-                    severity: 'SAFE',
-                    description: message,
-                    time: new Date().toLocaleTimeString(),
-                    acknowledged: true
-                };
-                this.showToast(`🛡️ ${message}`);
-                this.logEvent('RESOLVED', `Seat ${seatId}: ${message}`, 'SAFE');
-                this.updateHUDHeader();
-                this.resetWindowSensors();
-            }
-
-            resetAllAvatars() {
-                const seatIds = ['1A', '1B', '2A', '2B', '3A', '3B', '4A', '4B'];
-                seatIds.forEach(id => {
-                    const pass = document.getElementById(`passenger-${id}`);
-                    if (pass) {
-                        pass.setAttribute('position', '0 0.52 0.05');
-                        pass.setAttribute('rotation', '0 0 0');
-                    }
-                    const armLeft = document.getElementById(`armLeft-${id}`);
-                    if (armLeft) {
-                        armLeft.setAttribute('position', '-0.22 0.3 0');
-                        armLeft.setAttribute('rotation', '0 0 0');
-                    }
-                    const armRight = document.getElementById(`armRight-${id}`);
-                    if (armRight) {
-                        armRight.setAttribute('position', '0.22 0.3 0');
-                        armRight.setAttribute('rotation', '0 0 0');
-                    }
-                    this.setWindowAperture(id, 0.0);
-                });
-            }
-
-            setWindowAperture(seatId, openAmount) {
-                const sash = document.getElementById(`window-sash-${seatId}`);
-                if (sash) {
-                    // Slide down from 0.2 to (0.2 - openAmount)
-                    sash.setAttribute('position', `0 ${0.2 - openAmount} 0`);
-                }
-            }
-
-            highlightSensorGrid(seatId, color, opacity) {
-                const mesh = document.getElementById(`sensor-mesh-${seatId}`);
-                const led = document.getElementById(`sensor-led-${seatId}`);
-                if (mesh) {
-                    mesh.setAttribute('material', `color: ${color}; opacity: ${opacity}; transparent: true; wireframe: true; shader: flat`);
-                }
-                if (led) {
-                    led.setAttribute('material', `color: ${color}; emissive: ${color}; emissiveIntensity: 1.0; shader: flat`);
-                }
-            }
-
-            resetWindowSensors() {
-                const seatIds = ['1A', '1B', '2A', '2B', '3A', '3B', '4A', '4B'];
-                seatIds.forEach(id => {
-                    this.highlightSensorGrid(id, '#10b981', 0.12);
-                });
-            }
-
-            toggleSensorVisuals() {
-                this.showSensorMesh = !this.showSensorMesh;
-                const seatIds = ['1A', '1B', '2A', '2B', '3A', '3B', '4A', '4B'];
-                seatIds.forEach(id => {
-                    const mesh = document.getElementById(`sensor-mesh-${id}`);
-                    if (mesh) mesh.setAttribute('visible', this.showSensorMesh);
-                });
-                this.showToast(`📡 Sensor Tripwires: ${this.showSensorMesh ? 'VISIBLE' : 'HIDDEN'}`);
-            }
-
-            logEvent(source, event, level) {
-                const time = new Date().toLocaleTimeString();
-                this.alertHistory.unshift({ time, seat: source, event, level });
-                if (this.alertHistory.length > 8) this.alertHistory.pop();
-            }
-
-            showToast(text) {
-                const toast = document.getElementById('outcome-toast');
-                const toastText = document.getElementById('toast-text');
-                if (toast && toastText) {
-                    toastText.textContent = text;
-                    toast.classList.add('visible');
-                    clearTimeout(this.toastTimeout);
-                    this.toastTimeout = setTimeout(() => {
-                        toast.classList.remove('visible');
-                    }, 3200);
-                }
-            }
-
-            updateHUDHeader() {
-                const light = document.getElementById('status-light');
-                const label = document.getElementById('status-label');
-                if (!light || !label) return;
-
-                light.className = 'status-dot';
-                if (this.status === 'NORMAL') {
-                    label.textContent = 'STATUS: ALL CLEAR';
-                } else if (this.status === 'CAUTION') {
-                    light.classList.add('warning');
-                    label.textContent = 'STATUS: CAUTION (WINDOW APERTURE)';
-                } else if (this.status === 'WARNING') {
-                    light.classList.add('warning');
-                    label.textContent = `STATUS: WARNING (SEAT ${this.activeAlert.seat})`;
-                } else if (this.status === 'CRITICAL') {
-                    light.classList.add('critical');
-                    label.textContent = `STATUS: CRITICAL ALERT (SEAT ${this.activeAlert.seat})`;
-                }
-            }
-
-            // VIEWPOINTS (Camera switching for VR/Desktop comfort)
-            setViewpoint(viewKey) {
-                const rig = document.getElementById('rig');
-                if (!rig) return;
-
-                document.querySelectorAll('.hud-control-btn').forEach(b => b.classList.remove('active'));
-                const matched = document.getElementById(`btn-view-${viewKey}`);
-                if (matched) matched.classList.add('active');
-
-                switch (viewKey) {
-                    case 'driver':
-                        rig.setAttribute('position', '-0.75 0.1 3.5');
-                        rig.setAttribute('rotation', '0 0 0');
-                        break;
-                    case 'front':
-                        rig.setAttribute('position', '0 0.1 2.0');
-                        rig.setAttribute('rotation', '0 180 0');
-                        break;
-                    case 'mid':
-                        rig.setAttribute('position', '0 0.1 -0.5');
-                        rig.setAttribute('rotation', '0 180 0');
-                        break;
-                    case 'outside':
-                        rig.setAttribute('position', '-2.6 1.2 0.5');
-                        rig.setAttribute('rotation', '0 90 0');
-                        break;
-                }
-                this.playBeep(700, 0.05);
-            }
-
-            startExperience() {
-                const modal = document.getElementById('welcome-modal');
-                if (modal) modal.classList.add('hidden');
-                this.initAudio();
-                this.showToast('Welcome to WindowWise Simulation');
-            }
-
-            // ============================================================
-            // 2D LIVE DYNAMIC CANVAS DASHBOARD (RENDERED TO 3D TEXTURE)
-            // ============================================================
-            startDashboardLoop() {
-                const render = () => {
-                    this.drawDashboard();
-                    // Update A-Frame material texture
-                    const screen = document.getElementById('dashboard-screen');
-                    if (screen && screen.getObject3D('mesh')) {
-                        const mesh = screen.getObject3D('mesh');
-                        if (mesh.material && mesh.material.map) {
-                            mesh.material.map.needsUpdate = true;
-                        }
-                    }
-                    requestAnimationFrame(render);
-                };
-                requestAnimationFrame(render);
-            }
-
-            drawDashboard() {
-                const ctx = this.ctx;
-                const w = this.canvas.width;
-                const h = this.canvas.height;
-
-                // Background
-                ctx.fillStyle = '#0a0f1d';
-                ctx.fillRect(0, 0, w, h);
-
-                // Top Bar
-                ctx.fillStyle = '#0f172a';
-                ctx.fillRect(0, 0, w, 56);
-                ctx.strokeStyle = 'rgba(255,255,255,0.1)';
-                ctx.lineWidth = 1;
-                ctx.beginPath();
-                ctx.moveTo(0, 56);
-                ctx.lineTo(w, 56);
-                ctx.stroke();
-
-                // System Logo & Title
-                ctx.fillStyle = '#f59e0b';
-                ctx.font = 'bold 20px "Segoe UI", sans-serif';
-                ctx.fillText('WINDOWWISE™', 24, 36);
-
-                ctx.fillStyle = '#94a3b8';
-                ctx.font = '13px "Segoe UI", sans-serif';
-                ctx.fillText('PASSENGER PERIMETER SAFETY TERMINAL', 180, 35);
-
-                // System Status Pill (Top Right)
-                let pillColor = '#10b981';
-                let pillText = 'MONITORING: ALL CLEAR';
-                if (this.status === 'CAUTION') { pillColor = '#eab308'; pillText = 'CAUTION: APERTURE'; }
-                if (this.status === 'WARNING') { pillColor = '#f59e0b'; pillText = 'WARNING: PROTRUSION'; }
-                if (this.status === 'CRITICAL') { pillColor = '#ef4444'; pillText = 'CRITICAL: PERIMETER BREACH'; }
-
-                ctx.fillStyle = pillColor;
-                ctx.beginPath();
-                ctx.roundRect(w - 290, 14, 266, 28, 14);
-                ctx.fill();
-
-                ctx.fillStyle = '#000000';
-                ctx.font = 'bold 12px "Segoe UI", sans-serif';
-                ctx.fillText(pillText, w - 275, 33);
-
-                // --- LEFT COLUMN: BUS SEAT & WINDOW MATRIX MAP ---
-                ctx.fillStyle = '#111827';
-                ctx.beginPath();
-                ctx.roundRect(24, 72, 320, 310, 12);
-                ctx.fill();
-                ctx.stroke();
-
-                ctx.fillStyle = '#38bdf8';
-                ctx.font = 'bold 14px "Segoe UI", sans-serif';
-                ctx.fillText('PASSENGER PERIMETER MAP', 40, 98);
-
-                // Draw 8 seats in 4 rows (Left: 1A..4A, Right: 1B..4B)
-                const rows = [
-                    { l: '1A', r: '1B', y: 120 },
-                    { l: '2A', r: '2B', y: 175 },
-                    { l: '3A', r: '3B', y: 230 },
-                    { l: '4A', r: '4B', y: 285 }
-                ];
-
-                rows.forEach(row => {
-                    this.drawSeatNode(ctx, row.l, 45, row.y);
-                    // Aisle center line
-                    ctx.strokeStyle = 'rgba(255,255,255,0.06)';
-                    ctx.setLineDash([4, 4]);
-                    ctx.beginPath();
-                    ctx.moveTo(184, row.y - 5);
-                    ctx.lineTo(184, row.y + 45);
-                    ctx.stroke();
-                    ctx.setLineDash([]);
-                    this.drawSeatNode(ctx, row.r, 205, row.y);
-                });
-
-                // --- CENTER COLUMN: ACTIVE INCIDENT TELEMETRY CARD ---
-                ctx.fillStyle = '#111827';
-                ctx.beginPath();
-                ctx.roundRect(360, 72, 640, 185, 12);
-                ctx.fill();
-                ctx.stroke();
-
-                // Alert Header
-                ctx.fillStyle = pillColor;
-                ctx.font = 'bold 18px "Segoe UI", sans-serif';
-                ctx.fillText(this.activeAlert.title, 380, 108);
-
-                ctx.fillStyle = '#94a3b8';
-                ctx.font = '13px "Segoe UI", sans-serif';
-                ctx.fillText(`TARGET LOCATION: SEAT ${this.activeAlert.seat}   |   INCIDENT TYPE: ${this.activeAlert.type}`, 380, 134);
-
-                // Description box
-                ctx.fillStyle = 'rgba(255,255,255,0.04)';
-                ctx.beginPath();
-                ctx.roundRect(380, 148, 600, 52, 6);
-                ctx.fill();
-
-                ctx.fillStyle = '#e2e8f0';
-                ctx.font = '14px "Segoe UI", sans-serif';
-                ctx.fillText(this.activeAlert.description, 396, 178);
-
-                // Telemetry metrics
-                ctx.fillStyle = '#38bdf8';
-                ctx.font = 'bold 12px "Segoe UI", sans-serif';
-                ctx.fillText(`VEHICLE SPEED: ${Math.round(this.speed)} KM/H`, 380, 232);
-                ctx.fillText(`SEVERITY: ${this.activeAlert.severity}`, 580, 232);
-                ctx.fillText(`TIME: ${this.activeAlert.time}`, 780, 232);
-
-                // --- LOWER-RIGHT COLUMN: INCIDENT HISTORY LOG ---
-                ctx.fillStyle = '#111827';
-                ctx.beginPath();
-                ctx.roundRect(360, 272, 640, 110, 12);
-                ctx.fill();
-                ctx.stroke();
-
-                ctx.fillStyle = '#94a3b8';
-                ctx.font = 'bold 13px "Segoe UI", sans-serif';
-                ctx.fillText('INCIDENT & SENSOR EVENT LOG', 380, 296);
-
-                let logY = 320;
-                this.alertHistory.slice(0, 3).forEach(log => {
-                    let logColor = '#94a3b8';
-                    if (log.level === 'CRITICAL') logColor = '#f87171';
-                    if (log.level === 'WARNING') logColor = '#fbbf24';
-                    if (log.level === 'ACTION') logColor = '#38bdf8';
-                    if (log.level === 'SAFE') logColor = '#34d399';
-
-                    ctx.fillStyle = logColor;
-                    ctx.font = '12px "Consolas", monospace';
-                    ctx.fillText(`[${log.time}] (${log.seat}) ${log.event}`, 380, logY);
-                    logY += 22;
-                });
-
-                // --- BOTTOM BAR: DRIVER ACTION GUIDE ---
-                ctx.fillStyle = 'rgba(15, 23, 42, 0.9)';
-                ctx.fillRect(0, 400, w, 240);
-
-                ctx.fillStyle = '#64748b';
-                ctx.font = 'bold 12px "Segoe UI", sans-serif';
-                ctx.fillText('DIRECT DRIVER RESPONSE CONTROLS (USE CONTROLLER RAY OR CLICK BUTTONS BELOW DISPLAY):', 40, 425);
-            }
-
-            drawSeatNode(ctx, seatId, x, y) {
-                const isHazard = (this.activeAlert.seat === seatId && this.status !== 'NORMAL');
-                const nodeColor = isHazard ? (this.status === 'CRITICAL' ? '#ef4444' : '#f59e0b') : '#1e293b';
-                const borderColor = isHazard ? '#ffffff' : 'rgba(255,255,255,0.15)';
-
-                ctx.fillStyle = nodeColor;
-                ctx.strokeStyle = borderColor;
-                ctx.lineWidth = isHazard ? 2 : 1;
-                ctx.beginPath();
-                ctx.roundRect(x, y, 115, 42, 8);
-                ctx.fill();
-                ctx.stroke();
-
-                // Seat Label
-                ctx.fillStyle = isHazard ? '#ffffff' : '#e2e8f0';
-                ctx.font = 'bold 13px "Segoe UI", sans-serif';
-                ctx.fillText(`Seat ${seatId}`, x + 10, y + 20);
-
-                // Window status
-                ctx.fillStyle = isHazard ? '#fee2e2' : '#94a3b8';
-                ctx.font = '11px "Segoe UI", sans-serif';
-                const stateText = isHazard ? '⚠️ HAZARD' : '✓ SECURE';
-                ctx.fillText(stateText, x + 10, y + 34);
-            }
-
-            // ============================================================
-            // SCENERY & ROAD SPEED ANIMATION LOOP
-            // ============================================================
-            startSceneryLoop() {
-                let lastTime = performance.now();
-
-                const step = (time) => {
-                    const dt = (time - lastTime) / 1000;
-                    lastTime = time;
-
-                    // Smoothly interpolate speed
-                    this.speed += (this.targetSpeed - this.speed) * Math.min(dt * 2, 1);
-
-                    // Update engine hum pitch
-                    if (this.engineOsc && this.audioCtx) {
-                        const pitch = 30 + (this.speed / 45) * 35;
-                        this.engineOsc.frequency.setValueAtTime(pitch, this.audioCtx.currentTime);
-                    }
-
-                    // Update Desktop HUD speed label
-                    const speedLabel = document.getElementById('speed-label');
-                    if (speedLabel) speedLabel.textContent = `SPEED: ${Math.round(this.speed)} KM/H`;
-
-                    // Animate road dashes backwards
-                    const moveDelta = (this.speed / 3.6) * dt; // meters/sec
-                    const dashes = document.querySelectorAll('.road-dash');
-                    dashes.forEach(dash => {
-                        const pos = dash.getAttribute('position');
-                        let z = pos.z + moveDelta;
-                        if (z > 70) z -= 140;
-                        dash.setAttribute('position', `${pos.x} ${pos.y} ${z}`);
-                    });
-
-                    // Animate roadside trees & poles
-                    const trees = document.querySelectorAll('.roadside-tree, .roadside-pole');
-                    trees.forEach(tree => {
-                        const pos = tree.getAttribute('position');
-                        let z = pos.z + moveDelta;
-                        if (z > 60) z -= 120;
-                        tree.setAttribute('position', `${pos.x} ${pos.y} ${z}`);
-                    });
-
-                    requestAnimationFrame(step);
-                };
-                requestAnimationFrame(step);
-            }
+  <script>
+    class WindowWiseSystem {
+      constructor() {
+        this.status = 'NORMAL';
+        this.speed = 45;
+        this.targetSpeed = 45;
+        this.currentScenario = 'normal';
+        this.showSensorMesh = true;
+
+        this.activeAlert = {
+          title: 'ALL SYSTEMS SECURE',
+          seat: 'NONE',
+          type: 'NORMAL MONITORING',
+          severity: 'SAFE',
+          description: 'All 8 window apertures within safe parameters (<=10cm).',
+          time: '00:00:00',
+          acknowledged: false
+        };
+
+        this.alertHistory = [
+          { time: '14:28:10', seat: 'SYS', event: 'WindowWise v2.4 Initialized', level: 'INFO' },
+          { time: '14:29:05', seat: 'ALL', event: 'Perimeter IR Grids Calibrated', level: 'INFO' }
+        ];
+
+        this.audioCtx = null;
+        this.alarmOsc = null;
+        this.engineOsc = null;
+        this.engineGain = null;
+
+        this.init();
+      }
+
+      init() {
+        if (document.readyState === 'complete') {
+          this.buildWorld();
+        } else {
+          window.addEventListener('load', () => this.buildWorld());
         }
 
-        // Initialize globally
-        window.windowwise = new WindowWiseSystem();
-    </script>
-</body>
+        this.canvas = document.getElementById('dashboard-canvas');
+        this.ctx = this.canvas.getContext('2d');
+        this.startDashboardLoop();
+        this.startSceneryLoop();
 
+        // Listen for WebXR VR mode enter/exit
+        const sceneEl = document.querySelector('a-scene');
+        if (sceneEl) {
+          sceneEl.addEventListener('enter-vr', () => {
+            const modal = document.getElementById('welcome-modal');
+            const hud = document.getElementById('desktop-hud');
+            if (modal) modal.classList.add('hidden');
+            if (hud) hud.style.display = 'none';
+            this.initAudio();
+          });
+          sceneEl.addEventListener('exit-vr', () => {
+            const hud = document.getElementById('desktop-hud');
+            if (hud) hud.style.display = 'flex';
+          });
+        }
+      }
+
+      launchVR() {
+        this.initAudio();
+        const modal = document.getElementById('welcome-modal');
+        if (modal) modal.classList.add('hidden');
+        const scene = document.querySelector('a-scene');
+        if (scene) {
+          if (scene.hasLoaded) {
+            scene.enterVR();
+          } else {
+            scene.addEventListener('loaded', () => scene.enterVR());
+          }
+        }
+      }
+
+      startDesktop() {
+        this.initAudio();
+        const modal = document.getElementById('welcome-modal');
+        if (modal) modal.classList.add('hidden');
+        this.showToast('WindowWise Desktop Mode Active');
+      }
+
+      // Audio Initializer (Web Audio API)
+      initAudio() {
+        if (this.audioCtx) return;
+        try {
+          const AudioContext = window.AudioContext || window.webkitAudioContext;
+          this.audioCtx = new AudioContext();
+
+          // Engine hum
+          this.engineOsc = this.audioCtx.createOscillator();
+          this.engineGain = this.audioCtx.createGain();
+          this.engineOsc.type = 'sawtooth';
+          this.engineOsc.frequency.setValueAtTime(45, this.audioCtx.currentTime);
+
+          const filter = this.audioCtx.createBiquadFilter();
+          filter.type = 'lowpass';
+          filter.frequency.setValueAtTime(140, this.audioCtx.currentTime);
+
+          this.engineGain.gain.setValueAtTime(0.04, this.audioCtx.currentTime);
+          this.engineOsc.connect(filter);
+          filter.connect(this.engineGain);
+          this.engineGain.connect(this.audioCtx.destination);
+          this.engineOsc.start();
+        } catch (e) {}
+      }
+
+      playBeep(freq = 600, duration = 0.15, type = 'sine') {
+        if (!this.audioCtx) return;
+        try {
+          const osc = this.audioCtx.createOscillator();
+          const gain = this.audioCtx.createGain();
+          osc.type = type;
+          osc.frequency.setValueAtTime(freq, this.audioCtx.currentTime);
+          gain.gain.setValueAtTime(0.15, this.audioCtx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.001, this.audioCtx.currentTime + duration);
+          osc.connect(gain);
+          gain.connect(this.audioCtx.destination);
+          osc.start();
+          osc.stop(this.audioCtx.currentTime + duration);
+        } catch (e) {}
+      }
+
+      playAlarm(severity = 'CRITICAL') {
+        if (!this.audioCtx) return;
+        this.stopAlarm();
+        try {
+          const now = this.audioCtx.currentTime;
+          this.alarmOsc = this.audioCtx.createOscillator();
+          const alarmGain = this.audioCtx.createGain();
+
+          if (severity === 'CRITICAL') {
+            this.alarmOsc.type = 'sawtooth';
+            this.alarmOsc.frequency.setValueAtTime(880, now);
+            this.alarmOsc.frequency.setValueAtTime(659, now + 0.25);
+            this.alarmOsc.frequency.setValueAtTime(880, now + 0.5);
+            alarmGain.gain.setValueAtTime(0.2, now);
+            alarmGain.gain.exponentialRampToValueAtTime(0.01, now + 1.2);
+            this.alarmOsc.connect(alarmGain);
+            alarmGain.connect(this.audioCtx.destination);
+            this.alarmOsc.start();
+            this.alarmOsc.stop(now + 1.2);
+          } else {
+            this.playBeep(520, 0.15);
+            setTimeout(() => this.playBeep(680, 0.2), 160);
+          }
+        } catch (e) {}
+      }
+
+      stopAlarm() {
+        if (this.alarmOsc) {
+          try { this.alarmOsc.stop(); } catch (e) {}
+          this.alarmOsc = null;
+        }
+      }
+
+      playBrakeHiss() {
+        if (!this.audioCtx) return;
+        try {
+          const bufferSize = this.audioCtx.sampleRate * 0.8;
+          const buffer = this.audioCtx.createBuffer(1, bufferSize, this.audioCtx.sampleRate);
+          const data = buffer.getChannelData(0);
+          for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
+          const noise = this.audioCtx.createBufferSource();
+          noise.buffer = buffer;
+          const filter = this.audioCtx.createBiquadFilter();
+          filter.type = 'bandpass';
+          filter.frequency.value = 1800;
+          const gain = this.audioCtx.createGain();
+          gain.gain.setValueAtTime(0.15, this.audioCtx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.001, this.audioCtx.currentTime + 0.8);
+          noise.connect(filter);
+          filter.connect(gain);
+          gain.connect(this.audioCtx.destination);
+          noise.start();
+        } catch (e) {}
+      }
+
+      speak(text) {
+        if ('speechSynthesis' in window) {
+          window.speechSynthesis.cancel();
+          const utterance = new SpeechSynthesisUtterance(text);
+          utterance.rate = 1.05;
+          utterance.pitch = 1.0;
+          window.speechSynthesis.speak(utterance);
+        }
+      }
+
+      // Build 3D World Elements
+      buildWorld() {
+        this.buildAllSeatsAndPassengers();
+        this.buildWindows();
+        this.buildRoadside();
+      }
+
+      buildAllSeatsAndPassengers() {
+        const seatsConfig = [
+          { id: '1A', x: -0.85, z: -2.0, passenger: 'Sam', color: '#3b82f6', cap: '#1d4ed8' },
+          { id: '1B', x: 0.85, z: -2.0, passenger: 'Lucas', color: '#10b981', cap: '#047857' },
+          { id: '2A', x: -0.85, z: -0.5, passenger: 'Leo', color: '#ef4444', cap: '#b91c1c' },
+          { id: '2B', x: 0.85, z: -0.5, passenger: 'Emma', color: '#ec4899', cap: '#be185d' },
+          { id: '3A', x: -0.85, z: 1.0, passenger: 'Noah', color: '#8b5cf6', cap: '#6d28d9' },
+          { id: '3B', x: 0.85, z: 1.0, passenger: 'Maya', color: '#f59e0b', cap: '#b45309' },
+          { id: '4A', x: -0.85, z: 2.5, passenger: 'Ethan', color: '#06b6d4', cap: '#0e7490' },
+          { id: '4B', x: 0.85, z: 2.5, passenger: 'Sophia', color: '#84cc16', cap: '#4d7c0f' }
+        ];
+
+        seatsConfig.forEach(cfg => {
+          const container = document.getElementById(`seat-unit-${cfg.id}`);
+          if (!container) return;
+
+          // Seat Frame
+          const seatBench = document.createElement('a-box');
+          seatBench.setAttribute('position', '0 0.45 0');
+          seatBench.setAttribute('width', '0.75');
+          seatBench.setAttribute('height', '0.12');
+          seatBench.setAttribute('depth', '0.55');
+          seatBench.setAttribute('material', 'color: #1e3a8a; roughness: 0.7');
+          container.appendChild(seatBench);
+
+          const seatBack = document.createElement('a-box');
+          seatBack.setAttribute('position', '0 0.85 -0.23');
+          seatBack.setAttribute('width', '0.75');
+          seatBack.setAttribute('height', '0.7');
+          seatBack.setAttribute('depth', '0.08');
+          seatBack.setAttribute('material', 'color: #1e3a8a; roughness: 0.7');
+          container.appendChild(seatBack);
+
+          const grabBar = document.createElement('a-cylinder');
+          grabBar.setAttribute('position', '0 1.22 -0.23');
+          grabBar.setAttribute('rotation', '0 0 90');
+          grabBar.setAttribute('radius', '0.015');
+          grabBar.setAttribute('height', '0.7');
+          grabBar.setAttribute('material', 'color: #facc15; metalness: 0.7');
+          container.appendChild(grabBar);
+
+          const leg = document.createElement('a-cylinder');
+          leg.setAttribute('position', '0 0.2 0');
+          leg.setAttribute('radius', '0.025');
+          leg.setAttribute('height', '0.4');
+          leg.setAttribute('material', 'color: #334155; metalness: 0.8');
+          container.appendChild(leg);
+
+          // Passenger Avatar
+          const pass = document.createElement('a-entity');
+          pass.setAttribute('id', `passenger-${cfg.id}`);
+          pass.setAttribute('position', '0 0.52 -0.05');
+
+          const torso = document.createElement('a-box');
+          torso.setAttribute('id', `torso-${cfg.id}`);
+          torso.setAttribute('position', '0 0.35 0');
+          torso.setAttribute('width', '0.36');
+          torso.setAttribute('height', '0.45');
+          torso.setAttribute('depth', '0.22');
+          torso.setAttribute('material', `color: ${cfg.color}; roughness: 0.6`);
+          pass.appendChild(torso);
+
+          const headGroup = document.createElement('a-entity');
+          headGroup.setAttribute('id', `head-${cfg.id}`);
+          headGroup.setAttribute('position', '0 0.68 0');
+
+          const headSphere = document.createElement('a-sphere');
+          headSphere.setAttribute('radius', '0.12');
+          headSphere.setAttribute('material', 'color: #ffd1b3; roughness: 0.8');
+          headGroup.appendChild(headSphere);
+
+          const cap = document.createElement('a-cylinder');
+          cap.setAttribute('position', '0 0.09 0');
+          cap.setAttribute('radius', '0.13');
+          cap.setAttribute('height', '0.06');
+          cap.setAttribute('material', `color: ${cfg.cap}`);
+          headGroup.appendChild(cap);
+
+          const capVisor = document.createElement('a-box');
+          capVisor.setAttribute('position', '0 0.08 -0.13');
+          capVisor.setAttribute('width', '0.14');
+          capVisor.setAttribute('height', '0.015');
+          capVisor.setAttribute('depth', '0.1');
+          capVisor.setAttribute('material', `color: ${cfg.cap}`);
+          headGroup.appendChild(capVisor);
+
+          pass.appendChild(headGroup);
+
+          const armLeft = document.createElement('a-cylinder');
+          armLeft.setAttribute('id', `armLeft-${cfg.id}`);
+          armLeft.setAttribute('position', '-0.22 0.3 0');
+          armLeft.setAttribute('radius', '0.04');
+          armLeft.setAttribute('height', '0.35');
+          armLeft.setAttribute('material', `color: ${cfg.color}`);
+          pass.appendChild(armLeft);
+
+          const armRight = document.createElement('a-cylinder');
+          armRight.setAttribute('id', `armRight-${cfg.id}`);
+          armRight.setAttribute('position', '0.22 0.3 0');
+          armRight.setAttribute('radius', '0.04');
+          armRight.setAttribute('height', '0.35');
+          armRight.setAttribute('material', `color: ${cfg.color}`);
+          pass.appendChild(armRight);
+
+          container.appendChild(pass);
+        });
+      }
+
+      buildWindows() {
+        const windowIds = ['1A', '2A', '3A', '4A', '1B', '2B', '3B', '4B'];
+        windowIds.forEach(id => {
+          const frame = document.getElementById(`window-frame-${id}`);
+          if (!frame) return;
+
+          const border = document.createElement('a-box');
+          border.setAttribute('width', '0.05');
+          border.setAttribute('height', '0.9');
+          border.setAttribute('depth', '1.1');
+          border.setAttribute('material', 'color: #0f172a; roughness: 0.5; metalness: 0.7');
+          frame.appendChild(border);
+
+          const lowerGlass = document.createElement('a-box');
+          lowerGlass.setAttribute('position', '0 -0.2 0');
+          lowerGlass.setAttribute('width', '0.02');
+          lowerGlass.setAttribute('height', '0.45');
+          lowerGlass.setAttribute('depth', '1.02');
+          lowerGlass.setAttribute('material', 'color: #7dd3fc; opacity: 0.3; transparent: true; roughness: 0.1');
+          frame.appendChild(lowerGlass);
+
+          const sash = document.createElement('a-box');
+          sash.setAttribute('id', `window-sash-${id}`);
+          sash.setAttribute('position', '0 0.2 0');
+          sash.setAttribute('width', '0.025');
+          sash.setAttribute('height', '0.45');
+          sash.setAttribute('depth', '1.02');
+          sash.setAttribute('material', 'color: #38bdf8; opacity: 0.35; transparent: true; roughness: 0.1');
+
+          const latch = document.createElement('a-box');
+          latch.setAttribute('position', '0.02 0.18 0');
+          latch.setAttribute('width', '0.03');
+          latch.setAttribute('height', '0.04');
+          latch.setAttribute('depth', '0.2');
+          latch.setAttribute('material', 'color: #334155; metalness: 0.9');
+          sash.appendChild(latch);
+          frame.appendChild(sash);
+
+          // IR Sensor Tripwire Mesh
+          const irCurtain = document.createElement('a-plane');
+          irCurtain.setAttribute('id', `sensor-mesh-${id}`);
+          irCurtain.setAttribute('position', '-0.01 0.15 0');
+          irCurtain.setAttribute('rotation', '0 90 0');
+          irCurtain.setAttribute('width', '1.0');
+          irCurtain.setAttribute('height', '0.55');
+          irCurtain.setAttribute('material', 'color: #10b981; opacity: 0.15; transparent: true; wireframe: true; shader: flat');
+          frame.appendChild(irCurtain);
+
+          const statusLed = document.createElement('a-sphere');
+          statusLed.setAttribute('id', `sensor-led-${id}`);
+          statusLed.setAttribute('position', '0.02 0.44 0.52');
+          statusLed.setAttribute('radius', '0.02');
+          statusLed.setAttribute('material', 'color: #10b981; emissive: #10b981; emissiveIntensity: 0.8; shader: flat');
+          frame.appendChild(statusLed);
+        });
+      }
+
+      buildRoadside() {
+        const roadLines = document.getElementById('road-lines-container');
+        for (let i = -70; i <= 70; i += 7) {
+          const dash = document.createElement('a-plane');
+          dash.setAttribute('class', 'road-dash');
+          dash.setAttribute('position', `0 0.01 ${i}`);
+          dash.setAttribute('rotation', '-90 0 0');
+          dash.setAttribute('width', '0.25');
+          dash.setAttribute('height', '4');
+          dash.setAttribute('material', 'color: #facc15; roughness: 0.5');
+          roadLines.appendChild(dash);
+        }
+
+        const propsContainer = document.getElementById('roadside-props-container');
+        for (let z = -60; z <= 60; z += 20) {
+          const treeGroupL = document.createElement('a-entity');
+          treeGroupL.setAttribute('class', 'roadside-tree');
+          treeGroupL.setAttribute('position', `-8 0 ${z}`);
+          const trunkL = document.createElement('a-cylinder');
+          trunkL.setAttribute('position', '0 1.5 0');
+          trunkL.setAttribute('radius', '0.25');
+          trunkL.setAttribute('height', '3');
+          trunkL.setAttribute('material', 'color: #78350f; roughness: 0.9');
+          const foliageL = document.createElement('a-cone');
+          foliageL.setAttribute('position', '0 4 0');
+          foliageL.setAttribute('radius-bottom', '1.8');
+          foliageL.setAttribute('height', '3.5');
+          foliageL.setAttribute('material', 'color: #15803d; roughness: 0.8');
+          treeGroupL.appendChild(trunkL);
+          treeGroupL.appendChild(foliageL);
+          propsContainer.appendChild(treeGroupL);
+
+          const poleR = document.createElement('a-entity');
+          poleR.setAttribute('class', 'roadside-pole');
+          poleR.setAttribute('position', `6 0 ${z + 10}`);
+          const mast = document.createElement('a-cylinder');
+          mast.setAttribute('position', '0 2.5 0');
+          mast.setAttribute('radius', '0.08');
+          mast.setAttribute('height', '5');
+          mast.setAttribute('material', 'color: #64748b; metalness: 0.7');
+          poleR.appendChild(mast);
+          propsContainer.appendChild(poleR);
+        }
+      }
+
+      // DRIVER ACTION RESPONSES
+      handleDriverAction(action) {
+        this.initAudio();
+        this.playBeep(800, 0.08);
+
+        switch (action) {
+          case 'voice':
+            this.showToast('📢 Driver issued PA Voice Warning');
+            if (this.currentScenario === 'scenarioA') {
+              this.speak('Attention Leo at Seat 2A! Please pull your head and body back inside the bus immediately!');
+              setTimeout(() => this.resolvePassengerBehavior('2A', 'Leo safely seated inside.'), 2200);
+            } else if (this.currentScenario === 'scenarioB') {
+              this.speak('Attention Maya at Seat 3B. Please bring your arm inside the window.');
+              setTimeout(() => this.resolvePassengerBehavior('3B', 'Maya pulled arm inside.'), 2000);
+            } else if (this.currentScenario === 'scenarioC') {
+              this.speak('Sam at Seat 1A, please do not open the window past the safety mark.');
+              setTimeout(() => this.resolvePassengerBehavior('1A', 'Window closed to safe limit.'), 2000);
+            } else if (this.currentScenario === 'scenarioD') {
+              this.speak('Ethan at Seat 4A! Throwing objects out of the bus is strictly prohibited!');
+              setTimeout(() => this.resolvePassengerBehavior('4A', 'Hazard averted. Incident logged.'), 2000);
+            } else {
+              this.speak('Attention all passengers: Please ensure windows remain at safe limits.');
+            }
+            this.logEvent('DRIVER', 'PA Voice Warning Broadcasted', 'ACTION');
+            break;
+
+          case 'slow':
+            this.targetSpeed = 15;
+            this.playBrakeHiss();
+            this.showToast('⚠️ Vehicle Slowing to Caution Speed (15 km/h)');
+            this.logEvent('DRIVER', 'Vehicle Speed Reduced to 15 km/h', 'ACTION');
+            break;
+
+          case 'stop':
+            this.targetSpeed = 0;
+            this.playBrakeHiss();
+            this.showToast('🛑 Bus Coming to Complete Stop');
+            this.logEvent('DRIVER', 'Emergency Bus Stop Activated', 'ACTION');
+            setTimeout(() => {
+              if (this.currentScenario !== 'normal') {
+                this.resolvePassengerBehavior(this.activeAlert.seat, 'Bus halted safely. Attendant inspected.');
+              }
+            }, 1800);
+            break;
+
+          case 'ack':
+            this.activeAlert.acknowledged = true;
+            this.stopAlarm();
+            this.showToast('✓ Alert Acknowledged by Driver');
+            this.logEvent('DRIVER', `Alert for Seat ${this.activeAlert.seat} Acknowledged`, 'ACK');
+            break;
+
+          case 'notify':
+            this.playBeep(950, 0.2);
+            this.showToast('🔔 Notification Dispatched to Bus Attendant & Dispatch');
+            this.logEvent('DRIVER', `Attendant Alert Dispatched -> Seat ${this.activeAlert.seat}`, 'ACTION');
+            break;
+        }
+      }
+
+      // SCENARIO CONTROLLER
+      selectScenario(scenarioKey) {
+        this.initAudio();
+        this.currentScenario = scenarioKey;
+        this.resetAllAvatars();
+
+        document.querySelectorAll('.scenario-btn').forEach(b => b.classList.remove('active'));
+        const matched = Array.from(document.querySelectorAll('.scenario-btn')).find(b => b.getAttribute('onclick') && b.getAttribute('onclick').includes(scenarioKey));
+        if (matched) matched.classList.add('active');
+
+        switch (scenarioKey) {
+          case 'normal':
+            this.setNormalState();
+            break;
+          case 'scenarioA':
+            this.triggerScenarioA();
+            break;
+          case 'scenarioB':
+            this.triggerScenarioB();
+            break;
+          case 'scenarioC':
+            this.triggerScenarioC();
+            break;
+          case 'scenarioD':
+            this.triggerScenarioD();
+            break;
+        }
+      }
+
+      resetScenario() {
+        this.targetSpeed = 45;
+        this.selectScenario('normal');
+        this.showToast('🔄 Simulation Reset to Normal Cruising');
+      }
+
+      setNormalState() {
+        this.status = 'NORMAL';
+        this.stopAlarm();
+        this.activeAlert = {
+          title: 'ALL SYSTEMS SECURE',
+          seat: 'NONE',
+          type: 'NORMAL MONITORING',
+          severity: 'SAFE',
+          description: 'All 8 window apertures within safe limits (<=10cm).',
+          time: new Date().toLocaleTimeString(),
+          acknowledged: false
+        };
+        this.updateHUDHeader();
+        this.resetWindowSensors();
+      }
+
+      // SCENARIO A: Passenger Leaning Outside (Seat 2A - Leo)
+      triggerScenarioA() {
+        this.status = 'CRITICAL';
+        this.activeAlert = {
+          title: 'CRITICAL: HEAD/BODY LEANING OUTSIDE',
+          seat: '2A',
+          type: 'PERIMETER BREACH (TORSO)',
+          severity: 'CRITICAL',
+          description: 'Child passenger extending upper torso through open window into traffic lane!',
+          time: new Date().toLocaleTimeString(),
+          acknowledged: false
+        };
+
+        this.setWindowAperture('2A', 0.38);
+
+        const pass = document.getElementById('passenger-2A');
+        if (pass) {
+          pass.setAttribute('position', '-0.38 0.65 -0.05');
+          pass.setAttribute('rotation', '0 0 38');
+        }
+
+        this.highlightSensorGrid('2A', '#ef4444', 0.55);
+        this.playAlarm('CRITICAL');
+        this.logEvent('ALERT', 'CRITICAL BREACH: Torso Extrusion at Seat 2A', 'CRITICAL');
+        this.updateHUDHeader();
+      }
+
+      // SCENARIO B: Hand Outside Window (Seat 3B - Maya)
+      triggerScenarioB() {
+        this.status = 'WARNING';
+        this.activeAlert = {
+          title: 'WARNING: HAND EXTENDED OUTSIDE',
+          seat: '3B',
+          type: 'EXTREMITY PROTRUSION',
+          severity: 'WARNING',
+          description: 'Passenger hand extended 18cm past window frame.',
+          time: new Date().toLocaleTimeString(),
+          acknowledged: false
+        };
+
+        this.setWindowAperture('3B', 0.22);
+
+        const armRight = document.getElementById('armRight-3B');
+        if (armRight) {
+          armRight.setAttribute('position', '0.45 0.45 0');
+          armRight.setAttribute('rotation', '0 0 -85');
+        }
+
+        this.highlightSensorGrid('3B', '#f59e0b', 0.45);
+        this.playAlarm('WARNING');
+        this.logEvent('ALERT', 'Hand Protrusion Detected at Seat 3B', 'WARNING');
+        this.updateHUDHeader();
+      }
+
+      // SCENARIO C: Window Open Beyond Safe Limits (Seat 1A - Sam)
+      triggerScenarioC() {
+        this.status = 'CAUTION';
+        this.activeAlert = {
+          title: 'ALERT: WINDOW THRESHOLD EXCEEDED',
+          seat: '1A',
+          type: 'APERTURE OVER-LIMIT (>15cm)',
+          severity: 'CAUTION',
+          description: 'Window aperture opened to 28cm (Safe Limit: 10cm).',
+          time: new Date().toLocaleTimeString(),
+          acknowledged: false
+        };
+
+        this.setWindowAperture('1A', 0.32);
+
+        const armLeft = document.getElementById('armLeft-1A');
+        if (armLeft) {
+          armLeft.setAttribute('position', '-0.32 0.38 0');
+          armLeft.setAttribute('rotation', '0 0 45');
+        }
+
+        this.highlightSensorGrid('1A', '#eab308', 0.35);
+        this.playAlarm('CAUTION');
+        this.logEvent('ALERT', 'Window Aperture Threshold Exceeded at Seat 1A', 'CAUTION');
+        this.updateHUDHeader();
+      }
+
+      // SCENARIO D: Object Thrown Outside (Seat 4A - Ethan)
+      triggerScenarioD() {
+        this.status = 'CRITICAL';
+        this.activeAlert = {
+          title: 'HIGH ALERT: OBJECT THROWN OUTSIDE',
+          seat: '4A',
+          type: 'PROJECTILE DEPLOYED',
+          severity: 'CRITICAL',
+          description: 'Object ejected at speed into oncoming roadway traffic!',
+          time: new Date().toLocaleTimeString(),
+          acknowledged: false
+        };
+
+        this.setWindowAperture('4A', 0.35);
+
+        const armLeft = document.getElementById('armLeft-4A');
+        if (armLeft) {
+          armLeft.setAttribute('position', '-0.35 0.5 0.1');
+          armLeft.setAttribute('rotation', '30 0 75');
+        }
+
+        const projectile = document.getElementById('flying-projectile');
+        if (projectile) {
+          projectile.setAttribute('visible', 'true');
+          projectile.setAttribute('position', '-1.35 1.5 2.5');
+
+          let progress = 0;
+          const throwInterval = setInterval(() => {
+            progress += 0.05;
+            projectile.setAttribute('position', `${-1.35 - progress * 1.5} ${1.5 - progress * 0.9} ${2.5 + progress * 2}`);
+            if (progress >= 1.5) {
+              clearInterval(throwInterval);
+              setTimeout(() => projectile.setAttribute('visible', 'false'), 2000);
+            }
+          }, 40);
+        }
+
+        this.highlightSensorGrid('4A', '#ef4444', 0.6);
+        this.playAlarm('CRITICAL');
+        this.logEvent('ALERT', 'Foreign Projectile Ejection at Seat 4A', 'CRITICAL');
+        this.updateHUDHeader();
+      }
+
+      resolvePassengerBehavior(seatId, message) {
+        this.resetAllAvatars();
+        this.stopAlarm();
+        this.status = 'NORMAL';
+        this.activeAlert = {
+          title: 'HAZARD MITIGATED',
+          seat: seatId,
+          type: 'RESOLVED',
+          severity: 'SAFE',
+          description: message,
+          time: new Date().toLocaleTimeString(),
+          acknowledged: true
+        };
+        this.showToast(`🛡️ ${message}`);
+        this.logEvent('RESOLVED', `Seat ${seatId}: ${message}`, 'SAFE');
+        this.updateHUDHeader();
+        this.resetWindowSensors();
+      }
+
+      resetAllAvatars() {
+        const seatIds = ['1A', '1B', '2A', '2B', '3A', '3B', '4A', '4B'];
+        seatIds.forEach(id => {
+          const pass = document.getElementById(`passenger-${id}`);
+          if (pass) {
+            pass.setAttribute('position', '0 0.52 -0.05');
+            pass.setAttribute('rotation', '0 0 0');
+          }
+          const armLeft = document.getElementById(`armLeft-${id}`);
+          if (armLeft) {
+            armLeft.setAttribute('position', '-0.22 0.3 0');
+            armLeft.setAttribute('rotation', '0 0 0');
+          }
+          const armRight = document.getElementById(`armRight-${id}`);
+          if (armRight) {
+            armRight.setAttribute('position', '0.22 0.3 0');
+            armRight.setAttribute('rotation', '0 0 0');
+          }
+          this.setWindowAperture(id, 0.0);
+        });
+      }
+
+      setWindowAperture(seatId, openAmount) {
+        const sash = document.getElementById(`window-sash-${seatId}`);
+        if (sash) {
+          sash.setAttribute('position', `0 ${0.2 - openAmount} 0`);
+        }
+      }
+
+      highlightSensorGrid(seatId, color, opacity) {
+        const mesh = document.getElementById(`sensor-mesh-${seatId}`);
+        const led = document.getElementById(`sensor-led-${seatId}`);
+        if (mesh) {
+          mesh.setAttribute('material', `color: ${color}; opacity: ${opacity}; transparent: true; wireframe: true; shader: flat`);
+        }
+        if (led) {
+          led.setAttribute('material', `color: ${color}; emissive: ${color}; emissiveIntensity: 1.0; shader: flat`);
+        }
+      }
+
+      resetWindowSensors() {
+        const seatIds = ['1A', '1B', '2A', '2B', '3A', '3B', '4A', '4B'];
+        seatIds.forEach(id => {
+          this.highlightSensorGrid(id, '#10b981', 0.12);
+        });
+      }
+
+      toggleSensorVisuals() {
+        this.showSensorMesh = !this.showSensorMesh;
+        const seatIds = ['1A', '1B', '2A', '2B', '3A', '3B', '4A', '4B'];
+        seatIds.forEach(id => {
+          const mesh = document.getElementById(`sensor-mesh-${id}`);
+          if (mesh) mesh.setAttribute('visible', this.showSensorMesh);
+        });
+        this.showToast(`📡 Sensor Tripwires: ${this.showSensorMesh ? 'VISIBLE' : 'HIDDEN'}`);
+      }
+
+      logEvent(source, event, level) {
+        const time = new Date().toLocaleTimeString();
+        this.alertHistory.unshift({ time, seat: source, event, level });
+        if (this.alertHistory.length > 8) this.alertHistory.pop();
+      }
+
+      showToast(text) {
+        const toast = document.getElementById('outcome-toast');
+        const toastText = document.getElementById('toast-text');
+        if (toast && toastText) {
+          toastText.textContent = text;
+          toast.classList.add('visible');
+          clearTimeout(this.toastTimeout);
+          this.toastTimeout = setTimeout(() => {
+            toast.classList.remove('visible');
+          }, 3200);
+        }
+      }
+
+      updateHUDHeader() {
+        const light = document.getElementById('status-light');
+        const label = document.getElementById('status-label');
+        if (!light || !label) return;
+
+        light.className = 'status-dot';
+        if (this.status === 'NORMAL') {
+          label.textContent = 'STATUS: ALL CLEAR';
+        } else if (this.status === 'CAUTION') {
+          light.classList.add('warning');
+          label.textContent = 'STATUS: CAUTION (WINDOW APERTURE)';
+        } else if (this.status === 'WARNING') {
+          light.classList.add('warning');
+          label.textContent = `STATUS: WARNING (SEAT ${this.activeAlert.seat})`;
+        } else if (this.status === 'CRITICAL') {
+          light.classList.add('critical');
+          label.textContent = `STATUS: CRITICAL ALERT (SEAT ${this.activeAlert.seat})`;
+        }
+      }
+
+      // TELEPORTATION & VIEWPOINTS
+      teleportTo(dest) {
+        const rig = document.getElementById('rig');
+        if (!rig) return;
+
+        document.querySelectorAll('.hud-control-btn').forEach(b => b.classList.remove('active'));
+        const matched = document.getElementById(`btn-view-${dest}`);
+        if (matched) matched.classList.add('active');
+
+        switch (dest) {
+          case 'driver':
+            rig.setAttribute('position', '-0.7 0.1 -3.4');
+            rig.setAttribute('rotation', '0 0 0');
+            break;
+          case 'front':
+            rig.setAttribute('position', '0 0.1 -2.0');
+            rig.setAttribute('rotation', '0 0 0');
+            break;
+          case 'mid':
+            rig.setAttribute('position', '0 0.1 0.5');
+            rig.setAttribute('rotation', '0 0 0');
+            break;
+          case 'leo': // Directly next to Leo's seat at 2A
+            rig.setAttribute('position', '-0.3 0.1 -0.5');
+            rig.setAttribute('rotation', '0 -90 0');
+            break;
+        }
+        this.playBeep(700, 0.05);
+      }
+
+      // 2D LIVE CANVAS RENDERING ON 3D SCREEN
+      startDashboardLoop() {
+        const render = () => {
+          this.drawDashboard();
+          const screen = document.getElementById('dashboard-screen');
+          if (screen && screen.getObject3D('mesh')) {
+            const mesh = screen.getObject3D('mesh');
+            if (mesh.material && mesh.material.map) {
+              mesh.material.map.needsUpdate = true;
+            }
+          }
+          requestAnimationFrame(render);
+        };
+        requestAnimationFrame(render);
+      }
+
+      drawDashboard() {
+        const ctx = this.ctx;
+        const w = this.canvas.width;
+        const h = this.canvas.height;
+
+        ctx.fillStyle = '#0a0f1d';
+        ctx.fillRect(0, 0, w, h);
+
+        ctx.fillStyle = '#0f172a';
+        ctx.fillRect(0, 0, w, 56);
+        ctx.strokeStyle = 'rgba(255,255,255,0.1)';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(0, 56);
+        ctx.lineTo(w, 56);
+        ctx.stroke();
+
+        ctx.fillStyle = '#f59e0b';
+        ctx.font = 'bold 20px "Segoe UI", sans-serif';
+        ctx.fillText('WINDOWWISE', 24, 36);
+
+        ctx.fillStyle = '#94a3b8';
+        ctx.font = '13px "Segoe UI", sans-serif';
+        ctx.fillText('PASSENGER PERIMETER SAFETY TERMINAL', 180, 35);
+
+        let pillColor = '#10b981';
+        let pillText = 'MONITORING: ALL CLEAR';
+        if (this.status === 'CAUTION') { pillColor = '#eab308'; pillText = 'CAUTION: APERTURE'; }
+        if (this.status === 'WARNING') { pillColor = '#f59e0b'; pillText = 'WARNING: PROTRUSION'; }
+        if (this.status === 'CRITICAL') { pillColor = '#ef4444'; pillText = 'CRITICAL: PERIMETER BREACH'; }
+
+        ctx.fillStyle = pillColor;
+        ctx.beginPath();
+        ctx.roundRect(w - 290, 14, 266, 28, 14);
+        ctx.fill();
+
+        ctx.fillStyle = '#000000';
+        ctx.font = 'bold 12px "Segoe UI", sans-serif';
+        ctx.fillText(pillText, w - 275, 33);
+
+        // Matrix Map
+        ctx.fillStyle = '#111827';
+        ctx.beginPath();
+        ctx.roundRect(24, 72, 320, 310, 12);
+        ctx.fill();
+        ctx.stroke();
+
+        ctx.fillStyle = '#38bdf8';
+        ctx.font = 'bold 14px "Segoe UI", sans-serif';
+        ctx.fillText('PASSENGER PERIMETER MAP', 40, 98);
+
+        const rows = [
+          { l: '1A', r: '1B', y: 120 },
+          { l: '2A', r: '2B', y: 175 },
+          { l: '3A', r: '3B', y: 230 },
+          { l: '4A', r: '4B', y: 285 }
+        ];
+
+        rows.forEach(row => {
+          this.drawSeatNode(ctx, row.l, 45, row.y);
+          ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+          ctx.setLineDash([4, 4]);
+          ctx.beginPath();
+          ctx.moveTo(184, row.y - 5);
+          ctx.lineTo(184, row.y + 45);
+          ctx.stroke();
+          ctx.setLineDash([]);
+          this.drawSeatNode(ctx, row.r, 205, row.y);
+        });
+
+        // Telemetry Card
+        ctx.fillStyle = '#111827';
+        ctx.beginPath();
+        ctx.roundRect(360, 72, 640, 185, 12);
+        ctx.fill();
+        ctx.stroke();
+
+        ctx.fillStyle = pillColor;
+        ctx.font = 'bold 18px "Segoe UI", sans-serif';
+        ctx.fillText(this.activeAlert.title, 380, 108);
+
+        ctx.fillStyle = '#94a3b8';
+        ctx.font = '13px "Segoe UI", sans-serif';
+        ctx.fillText(`TARGET LOCATION: SEAT ${this.activeAlert.seat}   |   INCIDENT TYPE: ${this.activeAlert.type}`, 380, 134);
+
+        ctx.fillStyle = 'rgba(255,255,255,0.04)';
+        ctx.beginPath();
+        ctx.roundRect(380, 148, 600, 52, 6);
+        ctx.fill();
+
+        ctx.fillStyle = '#e2e8f0';
+        ctx.font = '14px "Segoe UI", sans-serif';
+        ctx.fillText(this.activeAlert.description, 396, 178);
+
+        ctx.fillStyle = '#38bdf8';
+        ctx.font = 'bold 12px "Segoe UI", sans-serif';
+        ctx.fillText(`VEHICLE SPEED: ${Math.round(this.speed)} KM/H`, 380, 232);
+        ctx.fillText(`SEVERITY: ${this.activeAlert.severity}`, 580, 232);
+        ctx.fillText(`TIME: ${this.activeAlert.time}`, 780, 232);
+
+        // History Log
+        ctx.fillStyle = '#111827';
+        ctx.beginPath();
+        ctx.roundRect(360, 272, 640, 110, 12);
+        ctx.fill();
+        ctx.stroke();
+
+        ctx.fillStyle = '#94a3b8';
+        ctx.font = 'bold 13px "Segoe UI", sans-serif';
+        ctx.fillText('INCIDENT & SENSOR EVENT LOG', 380, 296);
+
+        let logY = 320;
+        this.alertHistory.slice(0, 3).forEach(log => {
+          let logColor = '#94a3b8';
+          if (log.level === 'CRITICAL') logColor = '#f87171';
+          if (log.level === 'WARNING') logColor = '#fbbf24';
+          if (log.level === 'ACTION') logColor = '#38bdf8';
+          if (log.level === 'SAFE') logColor = '#34d399';
+
+          ctx.fillStyle = logColor;
+          ctx.font = '12px "Consolas", monospace';
+          ctx.fillText(`[${log.time}] (${log.seat}) ${log.event}`, 380, logY);
+          logY += 22;
+        });
+
+        // Driver Controls Guide
+        ctx.fillStyle = 'rgba(15, 23, 42, 0.9)';
+        ctx.fillRect(0, 400, w, 240);
+        ctx.fillStyle = '#64748b';
+        ctx.font = 'bold 12px "Segoe UI", sans-serif';
+        ctx.fillText('DIRECT DRIVER CONTROLS (POINT CONTROLLER RAY OR CLICK BUTTONS BELOW DISPLAY):', 40, 425);
+      }
+
+      drawSeatNode(ctx, seatId, x, y) {
+        const isHazard = (this.activeAlert.seat === seatId && this.status !== 'NORMAL');
+        const nodeColor = isHazard ? (this.status === 'CRITICAL' ? '#ef4444' : '#f59e0b') : '#1e293b';
+        const borderColor = isHazard ? '#ffffff' : 'rgba(255,255,255,0.15)';
+
+        ctx.fillStyle = nodeColor;
+        ctx.strokeStyle = borderColor;
+        ctx.lineWidth = isHazard ? 2 : 1;
+        ctx.beginPath();
+        ctx.roundRect(x, y, 115, 42, 8);
+        ctx.fill();
+        ctx.stroke();
+
+        ctx.fillStyle = isHazard ? '#ffffff' : '#e2e8f0';
+        ctx.font = 'bold 13px "Segoe UI", sans-serif';
+        ctx.fillText(`Seat ${seatId}`, x + 10, y + 20);
+
+        ctx.fillStyle = isHazard ? '#fee2e2' : '#94a3b8';
+        ctx.font = '11px "Segoe UI", sans-serif';
+        ctx.fillText(isHazard ? '⚠️ HAZARD' : '✓ SECURE', x + 10, y + 34);
+      }
+
+      // SCENERY LOOP
+      startSceneryLoop() {
+        let lastTime = performance.now();
+
+        const step = (time) => {
+          const dt = (time - lastTime) / 1000;
+          lastTime = time;
+
+          this.speed += (this.targetSpeed - this.speed) * Math.min(dt * 2, 1);
+
+          if (this.engineOsc && this.audioCtx) {
+            const pitch = 30 + (this.speed / 45) * 35;
+            this.engineOsc.frequency.setValueAtTime(pitch, this.audioCtx.currentTime);
+          }
+
+          const speedLabel = document.getElementById('speed-label');
+          if (speedLabel) speedLabel.textContent = `SPEED: ${Math.round(this.speed)} KM/H`;
+
+          // Move road stripes towards +Z (forward bus motion)
+          const moveDelta = (this.speed / 3.6) * dt;
+          const dashes = document.querySelectorAll('.road-dash');
+          dashes.forEach(dash => {
+            const pos = dash.getAttribute('position');
+            let z = pos.z + moveDelta;
+            if (z > 70) z -= 140;
+            dash.setAttribute('position', `${pos.x} ${pos.y} ${z}`);
+          });
+
+          const trees = document.querySelectorAll('.roadside-tree, .roadside-pole');
+          trees.forEach(tree => {
+            const pos = tree.getAttribute('position');
+            let z = pos.z + moveDelta;
+            if (z > 60) z -= 120;
+            tree.setAttribute('position', `${pos.x} ${pos.y} ${z}`);
+          });
+
+          requestAnimationFrame(step);
+        };
+        requestAnimationFrame(step);
+      }
+    }
+
+    // Initialize Global Engine
+    window.windowwise = new WindowWiseSystem();
+  </script>
+</body>
 </html>
